@@ -1,4 +1,4 @@
-SET search_path TO myapp; -- replace with your app name
+SET search_path TO lineitem;
 
 CREATE TABLE app_user (
     id              BIGINT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
