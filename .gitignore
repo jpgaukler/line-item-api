@@ -1,0 +1,8 @@
+/.env
+
+*/obj
+*/bin
+*.csproj.user
+.vs/
+
+*/coverage

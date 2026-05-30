@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Migrate Up": {
+      "commandName": "Project",
+      "commandLineArgs": "--connectionString=\"Host=localhost;Port=5432;Database=local-db;Username=justin;Password=password123\" \n"
+    },
+    "Migrate Down (to 0)": {
+      "commandName": "Project",
+      "commandLineArgs": "--connectionString=\"Host=localhost;Port=5432;Database=local-db;Username=justin;Password=password123\" \n --downgradeToRevision=0"
+    }
+  }
+}
