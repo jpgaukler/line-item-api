@@ -44,7 +44,7 @@ public class UserController : ControllerBase
     {
         var result = await _userService.RetrieveByIdAsync(id, cancellationToken);
 
-        return result is null
+        return result is not null
             ? Ok(result)
             : NotFound($"User with Id = {id} not found!");
     }
@@ -55,19 +55,17 @@ public class UserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateAsync(
         [FromRoute] long id,
-        [FromBody] UserModel example,
+        [FromBody] UserModel user,
         CancellationToken cancellationToken
     )
     {
         try
         {
-            var result = await _userService.UpdateAsync(example,
-                cancellationToken
-            );
+            var result = await _userService.UpdateAsync(id, user, cancellationToken);
 
             return result
                 ? NoContent()
-                : NotFound($"User with Id = {example.Id} not found!");
+                : NotFound($"User with Id = {id} not found!");
         }
         catch (BadRequestException ex)
         {

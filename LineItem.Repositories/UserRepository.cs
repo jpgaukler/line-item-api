@@ -77,11 +77,12 @@ public class UserRepository : DatabaseRepository, IUserRepository
         return user;
     }
 
-    public async Task<bool> UpdateAsync(UserModel user, CancellationToken cancellationToken)
+    public async Task<bool> UpdateAsync(long id, UserModel user, CancellationToken cancellationToken)
     {
-        const string query = "SELECT lineitem.app_user_update(@external_id, @display_name);";
+        const string query = "SELECT lineitem.app_user_update(@id, @external_id, @display_name);";
         var parameters = new Dictionary<string, object>
         {
+            { "@id", id },
             { "@external_id", user.ExternalId },
             { "@display_name", user.DisplayName }
         };
@@ -90,6 +91,7 @@ public class UserRepository : DatabaseRepository, IUserRepository
         await connection.OpenAsync(cancellationToken);
         await using var command = CreateCommand(query, parameters, connection);
         var result = (bool)(await command.ExecuteScalarAsync(cancellationToken) ?? false);
+
         return result;
     }
 
@@ -105,6 +107,7 @@ public class UserRepository : DatabaseRepository, IUserRepository
         await connection.OpenAsync(cancellationToken);
         await using var command = CreateCommand(query, parameters, connection);
         var result = (bool)(await command.ExecuteScalarAsync(cancellationToken) ?? false);
+
         return result;
     }
 
