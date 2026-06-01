@@ -13,6 +13,7 @@ public class InitialMigration : Migration
         Execute.Script(this.GetUpScript("tbl_app_user.sql"));
         Execute.Script(this.GetUpScript("fn_app_user_insert.sql"));
         Execute.Script(this.GetUpScript("fn_app_user_retrieve_by_id.sql"));
+        Execute.Script(this.GetUpScript("fn_app_user_retrieve_by_external_id.sql"));
         Execute.Script(this.GetUpScript("fn_app_user_update.sql"));
         Execute.Script(this.GetUpScript("fn_app_user_delete.sql"));
     }

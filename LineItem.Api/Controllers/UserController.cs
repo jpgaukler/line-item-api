@@ -1,6 +1,6 @@
-using System;
 using System.Threading;
 using System.Threading.Tasks;
+using LineItem.Exceptions;
 using LineItem.Models;
 using LineItem.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
@@ -22,77 +22,74 @@ public class UserController : ControllerBase
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<UserModel>> CreateAsync(
+    public async Task<IActionResult> CreateAsync(
         [FromBody] UserModel user,
-        CancellationToken cancellationToken
-    )
+        CancellationToken cancellationToken)
     {
         try
         {
             var id = await _userService.CreateAsync(user, cancellationToken);
-            return CreatedAtRoute(nameof(GetByIdAsync), new { id });
+            return CreatedAtAction(nameof(GetByIdAsync), new { id }, null);
         }
-        catch (InvalidOperationException ex)
+        catch (BadRequestException ex)
         {
             return BadRequest(ex.Message);
         }
     }
 
-    [HttpGet]
+    [HttpGet("{id:long}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [Route("{id}", Name = nameof(GetByIdAsync))]
-    public async Task<ActionResult<UserModel>> GetByIdAsync(
-        long id,
-        CancellationToken cancellationToken
-    )
+    public async Task<IActionResult> GetByIdAsync(long id, CancellationToken cancellationToken)
     {
         var result = await _userService.RetrieveByIdAsync(id, cancellationToken);
 
-        return result is null ? NotFound($"User with Id = {id} not found!") : Ok(result);
+        return result is null
+            ? Ok(result)
+            : NotFound($"User with Id = {id} not found!");
     }
 
-    [HttpPut]
+    [HttpPut("{id:long}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [Route("{id}")]
-    public async Task<ActionResult<UserModel>> UpdateAsync(
+    public async Task<IActionResult> UpdateAsync(
+        [FromRoute] long id,
         [FromBody] UserModel example,
         CancellationToken cancellationToken
     )
     {
         try
         {
-            var result = await _userService.UpdateAsync(
-                example,
+            var result = await _userService.UpdateAsync(example,
                 cancellationToken
             );
 
             return result
-                ? NotFound($"User with Id = {example.Id} not found!")
-                : NoContent();
+                ? NoContent()
+                : NotFound($"User with Id = {example.Id} not found!");
         }
-        catch (InvalidOperationException ex)
+        catch (BadRequestException ex)
         {
             return BadRequest(ex.Message);
         }
     }
 
-    [HttpDelete]
+    [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [Route("{id}")]
     public async Task<IActionResult> DeleteAsync(int id, CancellationToken cancellationToken)
     {
         try
         {
             var result = await _userService.DeleteAsync(id, cancellationToken);
 
-            return result ? NotFound($"User with Id = {id} not found!") : NoContent();
+            return result
+                ? NoContent()
+                : NotFound($"User with Id = {id} not found!");
         }
-        catch (InvalidOperationException ex)
+        catch (BadRequestException ex)
         {
             return BadRequest(ex.Message);
         }

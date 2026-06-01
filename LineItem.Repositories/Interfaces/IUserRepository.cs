@@ -10,6 +10,8 @@ public interface IUserRepository
 
     public Task<UserModel?> RetrieveByIdAsync(long id, CancellationToken cancellationToken);
 
+    public Task<UserModel?> RetrieveByExternalIdAsync(string externalId, CancellationToken cancellationToken);
+
     public Task<bool> UpdateAsync(UserModel user, CancellationToken cancellationToken);
 
     public Task<bool> DeleteAsync(long id, CancellationToken cancellationToken);

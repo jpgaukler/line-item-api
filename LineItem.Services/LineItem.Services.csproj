@@ -1,12 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>disable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\LineItem.Models\LineItem.Models.csproj" />
-    <ProjectReference Include="..\LineItem.Repositories\LineItem.Repositories.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\LineItem.Exceptions\LineItem.Exceptions.csproj"/>
+        <ProjectReference Include="..\LineItem.Models\LineItem.Models.csproj"/>
+        <ProjectReference Include="..\LineItem.Repositories\LineItem.Repositories.csproj"/>
+    </ItemGroup>
 </Project>

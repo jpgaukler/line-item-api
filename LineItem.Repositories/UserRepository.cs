@@ -56,6 +56,26 @@ public class UserRepository : DatabaseRepository, IUserRepository
         return user;
     }
 
+    public async Task<UserModel?> RetrieveByExternalIdAsync(string id, CancellationToken cancellationToken)
+    {
+        const string query = "SELECT * FROM app_user_retrieve_by_external_id(@id);";
+        var parameters = new Dictionary<string, object>
+        {
+            { "@id", id }
+        };
+
+        await using var connection = GetConnection();
+        await connection.OpenAsync(cancellationToken);
+        await using var command = CreateCommand(query, parameters, connection);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+        UserModel? user = null;
+
+        if (await reader.ReadAsync(cancellationToken))
+            user = ParseUser(reader);
+
+        return user;
+    }
 
     public async Task<bool> UpdateAsync(UserModel user, CancellationToken cancellationToken)
     {

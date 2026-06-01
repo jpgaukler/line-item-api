@@ -71,7 +71,11 @@ public static class Program
             });
 
         // Add services to the container.
-        services.AddControllers();
+        services.AddControllers(options =>
+        {
+            // Stops ASP.NET Core from removing "Async" from action names
+            options.SuppressAsyncSuffixInActionNames = false;
+        });
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
 
