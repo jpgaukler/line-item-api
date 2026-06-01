@@ -1,8 +1,9 @@
 using System;
 using Asp.Versioning;
-using Asp.Versioning.ApiExplorer;
 using LineItem.Repositories;
 using LineItem.Repositories.Interfaces;
+using LineItem.Services;
+using LineItem.Services.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,7 +12,7 @@ using Serilog;
 
 namespace LineItem.Api;
 
-public class Program
+public static class Program
 {
     public static void Main(string[] args)
     {
@@ -42,14 +43,13 @@ public class Program
         }
     }
 
-    public static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+    private static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         // configure logging (two-stage initialization: https://github.com/serilog/serilog-aspnetcore?tab=readme-ov-file#two-stage-initialization
-        services.AddSerilog(
-            (serviceProvider, logConfiguration) =>
-                logConfiguration
-                    .ReadFrom.Configuration(configuration)
-                    .ReadFrom.Services(serviceProvider)
+        services.AddSerilog((serviceProvider, logConfiguration) =>
+            logConfiguration
+                .ReadFrom.Configuration(configuration)
+                .ReadFrom.Services(serviceProvider)
         );
 
         // configure versioning
@@ -76,27 +76,25 @@ public class Program
         services.AddSwaggerGen();
 
         // configure cpq database
-        string? cpqConnectionString = configuration.GetConnectionString("Default");
+        var connectionString = configuration.GetConnectionString("Default");
 
-        if (string.IsNullOrEmpty(cpqConnectionString))
-        {
+        if (string.IsNullOrEmpty(connectionString))
             throw new Exception("Connection string is null or undefined!");
-        }
 
-        services.AddScoped<IUserRepository, UserRepository>();
+        // add repositories
+        services.AddScoped<IUserRepository, UserRepository>(serviceProvider => new UserRepository(connectionString));
+
+        // add services
+        services.AddScoped<IUserService, UserService>();
 
         // Configure health checks
-        //TODO: need to learn more about what this does
         services.AddHealthChecks();
     }
 
-    public static void ConfigureApplication(WebApplication application)
+    private static void ConfigureApplication(WebApplication application)
     {
         // Configure the HTTP request pipeline.
-        if (application.Environment.IsDevelopment())
-        {
-            application.UseDeveloperExceptionPage();
-        }
+        if (application.Environment.IsDevelopment()) application.UseDeveloperExceptionPage();
 
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         application.UseSwagger();

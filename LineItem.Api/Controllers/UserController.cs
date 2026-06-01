@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using LineItem.Models;
@@ -10,27 +9,27 @@ using Microsoft.AspNetCore.Mvc;
 namespace LineItem.Api.Controllers;
 
 [ApiController]
-[Route("api/v{version:apiVersion}/catalog-products")]
-public class ExampleController : ControllerBase
+[Route("api/v{version:apiVersion}/users")]
+public class UserController : ControllerBase
 {
-    private readonly IExampleService _exampleService;
+    private readonly IUserService _userService;
 
-    public ExampleController(IExampleService exampleService)
+    public UserController(IUserService userService)
     {
-        _exampleService = exampleService;
+        _userService = userService;
     }
 
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<ExampleModel>> CreateAsync(
-        [FromBody] ExampleModel example,
+    public async Task<ActionResult<UserModel>> CreateAsync(
+        [FromBody] UserModel user,
         CancellationToken cancellationToken
     )
     {
         try
         {
-            var id = await _exampleService.CreateAsync(example, cancellationToken);
+            var id = await _userService.CreateAsync(user, cancellationToken);
             return CreatedAtRoute(nameof(GetByIdAsync), new { id });
         }
         catch (InvalidOperationException ex)
@@ -43,14 +42,14 @@ public class ExampleController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [Route("{id}", Name = nameof(GetByIdAsync))]
-    public async Task<ActionResult<ExampleModel>> GetByIdAsync(
-        int id,
+    public async Task<ActionResult<UserModel>> GetByIdAsync(
+        long id,
         CancellationToken cancellationToken
     )
     {
-        var result = await _exampleService.GetByIdAsync(id, cancellationToken);
+        var result = await _userService.RetrieveByIdAsync(id, cancellationToken);
 
-        return result is null ? NotFound($"Example (Id = {id}) not found!") : Ok(result);
+        return result is null ? NotFound($"User with Id = {id} not found!") : Ok(result);
     }
 
     [HttpPut]
@@ -58,20 +57,20 @@ public class ExampleController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [Route("{id}")]
-    public async Task<ActionResult<ExampleModel>> UpdateAsync(
-        [FromBody] ExampleModel example,
+    public async Task<ActionResult<UserModel>> UpdateAsync(
+        [FromBody] UserModel example,
         CancellationToken cancellationToken
     )
     {
         try
         {
-            bool result = await _exampleService.UpdateAsync(
+            var result = await _userService.UpdateAsync(
                 example,
                 cancellationToken
             );
 
             return result
-                ? NotFound($"Example (Id = {example.Id}) not found!")
+                ? NotFound($"User with Id = {example.Id} not found!")
                 : NoContent();
         }
         catch (InvalidOperationException ex)
@@ -89,9 +88,9 @@ public class ExampleController : ControllerBase
     {
         try
         {
-            bool result = await _exampleService.DeleteAsync(id, cancellationToken);
+            var result = await _userService.DeleteAsync(id, cancellationToken);
 
-            return result ? NotFound($"Example (Id = {id}) not found!") : NoContent();
+            return result ? NotFound($"User with Id = {id} not found!") : NoContent();
         }
         catch (InvalidOperationException ex)
         {

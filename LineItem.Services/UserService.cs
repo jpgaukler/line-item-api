@@ -24,7 +24,7 @@ public class UserService : IUserService
         return id;
     }
 
-    public Task<UserModel?> RetrieveByIdAsync(int id, CancellationToken cancellationToken)
+    public Task<UserModel?> RetrieveByIdAsync(long id, CancellationToken cancellationToken)
     {
         var user = _userRepository.RetrieveByIdAsync(id, cancellationToken);
         return user;
@@ -36,7 +36,7 @@ public class UserService : IUserService
         return result;
     }
 
-    public Task<bool> DeleteAsync(int id, CancellationToken cancellationToken)
+    public Task<bool> DeleteAsync(long id, CancellationToken cancellationToken)
     {
         var result = _userRepository.DeleteAsync(id, cancellationToken);
         return result;

@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION lineitem.app_user_update(
-  p_external_id TEXT,
-  p_display_name TEXT
+  p_external_id VARCHAR,
+  p_display_name VARCHAR
 )
   RETURNS BOOLEAN
 AS

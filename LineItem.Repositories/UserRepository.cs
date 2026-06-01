@@ -35,7 +35,7 @@ public class UserRepository : DatabaseRepository, IUserRepository
         return Convert.ToInt64(result);
     }
 
-    public async Task<UserModel?> RetrieveByIdAsync(int id, CancellationToken cancellationToken)
+    public async Task<UserModel?> RetrieveByIdAsync(long id, CancellationToken cancellationToken)
     {
         const string query = "SELECT * FROM app_user_retrieve_by_id(@id);";
         var parameters = new Dictionary<string, object>
@@ -73,7 +73,7 @@ public class UserRepository : DatabaseRepository, IUserRepository
         return result;
     }
 
-    public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken)
+    public async Task<bool> DeleteAsync(long id, CancellationToken cancellationToken)
     {
         const string query = "SELECT lineitem.app_user_delete(@id);";
         var parameters = new Dictionary<string, object>
