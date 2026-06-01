@@ -83,7 +83,7 @@ public class Program
             throw new Exception("Connection string is null or undefined!");
         }
 
-        services.AddScoped<IExampleRepository, ExampleRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
 
         // Configure health checks
         //TODO: need to learn more about what this does

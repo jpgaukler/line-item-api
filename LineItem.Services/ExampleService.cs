@@ -13,12 +13,9 @@ namespace LineItem.Services;
 public class ExampleService : IExampleService
 {
     private readonly ILogger<ExampleService> _logger;
-    private readonly IExampleRepository _exampleRepository;
+    private readonly IUserRepository _exampleRepository;
 
-    public ExampleService(
-        IExampleRepository exampleRepository,
-        ILogger<ExampleService> logger
-    )
+    public ExampleService(IUserRepository exampleRepository, ILogger<ExampleService> logger)
     {
         _exampleRepository = exampleRepository;
         _logger = logger;
@@ -39,10 +36,7 @@ public class ExampleService : IExampleService
         throw new NotImplementedException();
     }
 
-    public Task<bool> UpdateAsync(
-        ExampleModel example,
-        CancellationToken cancellationToken
-    )
+    public Task<bool> UpdateAsync(ExampleModel example, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }

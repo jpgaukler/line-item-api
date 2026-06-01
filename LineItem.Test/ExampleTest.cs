@@ -11,29 +11,22 @@ namespace LineItem.Test
 {
     public class ExampleTest
     {
-        private readonly Mock<IExampleRepository> _exampleRepository;
+        private readonly Mock<IUserRepository> _exampleRepository;
 
         private readonly IExampleService _exampleService;
 
         public ExampleTest()
         {
-            _exampleRepository = new Mock<IExampleRepository>();
+            _exampleRepository = new Mock<IUserRepository>();
             var logger = new Mock<ILogger<ExampleService>>();
 
-            _exampleService = new ExampleService(
-                _exampleRepository.Object,
-                logger.Object
-            );
+            _exampleService = new ExampleService(_exampleRepository.Object, logger.Object);
         }
 
         [Fact]
         public async Task CreateExample_WithInvalidName_ThrowsValidationException()
         {
-            var example = new ExampleModel
-            {
-                Name = "Test",
-                Description = "Test",
-            };
+            var example = new ExampleModel { Name = "Test", Description = "Test" };
 
             Exception ex = await Assert.ThrowsAsync<Exception>(() =>
                 _exampleService.CreateAsync(example, default)
