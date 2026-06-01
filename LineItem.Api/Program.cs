@@ -1,6 +1,7 @@
 using System;
 using Asp.Versioning;
 using LineItem.Repositories;
+using LineItem.Repositories.Helpers;
 using LineItem.Repositories.Interfaces;
 using LineItem.Services;
 using LineItem.Services.Interfaces;
@@ -79,14 +80,14 @@ public static class Program
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
 
-        // configure cpq database
+        // database
         var connectionString = configuration.GetConnectionString("Default");
 
         if (string.IsNullOrEmpty(connectionString))
             throw new Exception("Connection string is null or undefined!");
 
         // add repositories
-        services.AddScoped<IUserRepository, UserRepository>(serviceProvider => new UserRepository(connectionString));
+        services.AddDatabaseRepository<IUserRepository, UserRepository>(connectionString);
 
         // add services
         services.AddScoped<IUserService, UserService>();

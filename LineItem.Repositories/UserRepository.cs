@@ -37,7 +37,7 @@ public class UserRepository : DatabaseRepository, IUserRepository
 
     public async Task<UserModel?> RetrieveByIdAsync(long id, CancellationToken cancellationToken)
     {
-        const string query = "SELECT * FROM app_user_retrieve_by_id(@id);";
+        const string query = "SELECT * FROM lineitem.app_user_retrieve_by_id(@id);";
         var parameters = new Dictionary<string, object>
         {
             { "@id", id }
@@ -56,12 +56,12 @@ public class UserRepository : DatabaseRepository, IUserRepository
         return user;
     }
 
-    public async Task<UserModel?> RetrieveByExternalIdAsync(string id, CancellationToken cancellationToken)
+    public async Task<UserModel?> RetrieveByExternalIdAsync(string externalId, CancellationToken cancellationToken)
     {
-        const string query = "SELECT * FROM app_user_retrieve_by_external_id(@id);";
+        const string query = "SELECT * FROM lineitem.app_user_retrieve_by_external_id(@external_id);";
         var parameters = new Dictionary<string, object>
         {
-            { "@id", id }
+            { "@external_id", externalId }
         };
 
         await using var connection = GetConnection();
@@ -116,7 +116,7 @@ public class UserRepository : DatabaseRepository, IUserRepository
             ExternalId = r.String("external_id"),
             DisplayName = r.String("display_name"),
             CreatedAt = r.DateTime("created_at"),
-            UpdatedAt = r.DateTime("updated_at")
+            UpdatedAt = r.IsNull("updated_at") ? null : r.DateTime("updated_at")
         };
     }
 }
