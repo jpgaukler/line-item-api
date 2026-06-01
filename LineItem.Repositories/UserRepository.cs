@@ -35,7 +35,7 @@ public class UserRepository : DatabaseRepository, IUserRepository
         return Convert.ToInt64(result);
     }
 
-    public async Task<UserModel?> GetByIdAsync(int id, CancellationToken cancellationToken)
+    public async Task<UserModel?> RetrieveByIdAsync(int id, CancellationToken cancellationToken)
     {
         const string query = "SELECT * FROM app_user_retrieve_by_id(@id);";
         var parameters = new Dictionary<string, object>
