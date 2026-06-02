@@ -54,7 +54,7 @@ public class UserController : ControllerBase
     }
 
     [HttpPut("{id:long}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateAsync(
@@ -80,7 +80,6 @@ public class UserController : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteAsync(int id, CancellationToken cancellationToken)
     {
         var result = await _userService.DeleteAsync(id, cancellationToken);
