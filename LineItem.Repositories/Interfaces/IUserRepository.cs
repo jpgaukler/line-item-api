@@ -6,7 +6,7 @@ namespace LineItem.Repositories.Interfaces;
 
 public interface IUserRepository
 {
-    public Task<long> CreateAsync(UserModel user, CancellationToken cancellationToken);
+    public Task<UserModel> CreateAsync(UserModel user, CancellationToken cancellationToken);
 
     public Task<UserModel?> RetrieveByIdAsync(long id, CancellationToken cancellationToken);
 

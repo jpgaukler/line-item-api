@@ -19,15 +19,15 @@ public class UserService : IUserService
         _logger = logger;
     }
 
-    public async Task<long> CreateAsync(UserModel user, CancellationToken cancellationToken)
+    public async Task<UserModel> CreateAsync(UserModel user, CancellationToken cancellationToken)
     {
         var existingUser = await _userRepository.RetrieveByExternalIdAsync(user.ExternalId, cancellationToken);
 
         if (existingUser != null)
             throw new BadRequestException($"A user with External Id = {user.ExternalId} already exists.");
 
-        var id = await _userRepository.CreateAsync(user, cancellationToken);
-        return id;
+        var createdUser = await _userRepository.CreateAsync(user, cancellationToken);
+        return createdUser;
     }
 
     public Task<UserModel?> RetrieveByIdAsync(long id, CancellationToken cancellationToken)

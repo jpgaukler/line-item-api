@@ -28,8 +28,12 @@ public class UserController : ControllerBase
     {
         try
         {
-            var id = await _userService.CreateAsync(user, cancellationToken);
-            return CreatedAtAction(nameof(GetByIdAsync), new { id }, null);
+            var createdUser = await _userService.CreateAsync(user, cancellationToken);
+            return CreatedAtAction(
+                nameof(GetByIdAsync),
+                new { version = "1", id = createdUser.Id },
+                createdUser
+            );
         }
         catch (BadRequestException ex)
         {

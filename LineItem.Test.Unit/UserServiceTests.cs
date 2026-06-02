@@ -7,8 +7,9 @@ using LineItem.Services;
 using LineItem.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Xunit;
 
-namespace LineItem.Test;
+namespace LineItem.Test.Unit;
 
 public class UserServiceTests
 {

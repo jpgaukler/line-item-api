@@ -15,9 +15,9 @@ public class UserRepository : DatabaseRepository, IUserRepository
     {
     }
 
-    public async Task<long> CreateAsync(UserModel user, CancellationToken cancellationToken)
+    public async Task<UserModel> CreateAsync(UserModel user, CancellationToken cancellationToken)
     {
-        const string query = "SELECT lineitem.app_user_insert(@external_id, @display_name);";
+        const string query = "SELECT * FROM lineitem.app_user_insert(@external_id, @display_name);";
         var parameters = new Dictionary<string, object>
         {
             { "@external_id", user.ExternalId },
@@ -27,12 +27,12 @@ public class UserRepository : DatabaseRepository, IUserRepository
         await using var connection = GetConnection();
         await connection.OpenAsync(cancellationToken);
         await using var command = CreateCommand(query, parameters, connection);
-        var result = await command.ExecuteScalarAsync(cancellationToken);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
-        if (result == null || result == DBNull.Value)
-            throw new Exception("User creation failed; no Id returned.");
+        if (await reader.ReadAsync(cancellationToken))
+            return ParseUser(reader);
 
-        return Convert.ToInt64(result);
+        throw new Exception("User creation failed; no row returned.");
     }
 
     public async Task<UserModel?> RetrieveByIdAsync(long id, CancellationToken cancellationToken)
