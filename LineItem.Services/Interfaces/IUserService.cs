@@ -10,7 +10,7 @@ public interface IUserService
 
     public Task<UserModel?> RetrieveByIdAsync(long id, CancellationToken cancellationToken);
 
-    public Task<bool> UpdateAsync(
+    public Task<UserModel?> UpdateAsync(
         long id,
         UserModel user,
         CancellationToken cancellationToken

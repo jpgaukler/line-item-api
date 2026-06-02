@@ -65,10 +65,10 @@ public class UserController : ControllerBase
     {
         try
         {
-            var result = await _userService.UpdateAsync(id, user, cancellationToken);
+            var updatedUser = await _userService.UpdateAsync(id, user, cancellationToken);
 
-            return result
-                ? NoContent()
+            return updatedUser is not null
+                ? Ok(updatedUser)
                 : NotFound($"User with Id = {id} not found!");
         }
         catch (BadRequestException ex)
@@ -83,17 +83,10 @@ public class UserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteAsync(int id, CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await _userService.DeleteAsync(id, cancellationToken);
+        var result = await _userService.DeleteAsync(id, cancellationToken);
 
-            return result
-                ? NoContent()
-                : NotFound($"User with Id = {id} not found!");
-        }
-        catch (BadRequestException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+        return result
+            ? NoContent()
+            : NotFound($"User with Id = {id} not found!");
     }
 }

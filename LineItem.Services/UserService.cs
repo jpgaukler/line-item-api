@@ -35,9 +35,15 @@ public class UserService : IUserService
         return _userRepository.RetrieveByIdAsync(id, cancellationToken);
     }
 
-    public Task<bool> UpdateAsync(long id, UserModel user, CancellationToken cancellationToken)
+    public async Task<UserModel?> UpdateAsync(long id, UserModel user, CancellationToken cancellationToken)
     {
-        return _userRepository.UpdateAsync(id, user, cancellationToken);
+        var existingUser = await _userRepository.RetrieveByExternalIdAsync(user.ExternalId, cancellationToken);
+
+        if (existingUser != null)
+            throw new BadRequestException($"A user with External Id = {user.ExternalId} already exists.");
+
+        var updatedUser = await _userRepository.UpdateAsync(id, user, cancellationToken);
+        return updatedUser;
     }
 
     public Task<bool> DeleteAsync(long id, CancellationToken cancellationToken)

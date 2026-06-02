@@ -27,7 +27,7 @@ public class UserControllerTests
     }
 
     [Fact]
-    public async Task UserModel_CRUDWorkflow_ShouldComplete()
+    public async Task UserCRUD_WithValidUser_IsSuccessful()
     {
         // CREATE
         var newUser = new UserModel
@@ -75,16 +75,9 @@ public class UserControllerTests
         };
 
         response = await _client.PutAsJsonAsync($"api/v1/users/{userId}", updatedUser);
-
-        _output.WriteLine($"UPDATE - User updated with:\n{JsonSerializer.Serialize(updatedUser, JsonOptions)}");
-
-        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-
-        // RETRIEVE (verify update)
-        response = await _client.GetAsync($"api/v1/users/{userId}");
         user = await response.Content.ReadFromJsonAsync<UserModel>();
 
-        _output.WriteLine($"RETRIEVE (after update) - User retrieved:\n{JsonSerializer.Serialize(user, JsonOptions)}");
+        _output.WriteLine($"UPDATE - User updated:\n{JsonSerializer.Serialize(user, JsonOptions)}");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         user.Should().NotBeNull();
@@ -104,6 +97,138 @@ public class UserControllerTests
 
         // RETRIEVE (verify deletion)
         response = await _client.GetAsync($"api/v1/users/{userId}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+
+    [Fact]
+    public async Task CreateUser_WithDuplicateExternalId_ReturnsBadRequest()
+    {
+        // CREATE first user
+        var newUser = new UserModel
+        {
+            ExternalId = $"auth0|test-duplicate-{Guid.NewGuid()}",
+            DisplayName = "Duplicate Test"
+        };
+
+        var response = await _client.PostAsJsonAsync("api/v1/users", newUser);
+        var user = await response.Content.ReadFromJsonAsync<UserModel>();
+
+        _output.WriteLine($"CREATE - First user created:\n{JsonSerializer.Serialize(user, JsonOptions)}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        user.Should().NotBeNull();
+        user.Id.Should().BeGreaterThan(0);
+
+        // CREATE second user with same ExternalId
+        var duplicateUser = new UserModel
+        {
+            ExternalId = newUser.ExternalId,
+            DisplayName = "Duplicate Test 2"
+        };
+
+        response = await _client.PostAsJsonAsync("api/v1/users", duplicateUser);
+
+        _output.WriteLine($"CREATE - Attempted duplicate user creation with ExternalId: {duplicateUser.ExternalId}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        // Cleanup
+        await _client.DeleteAsync($"api/v1/users/{user.Id}");
+    }
+
+    [Fact]
+    public async Task UpdateUser_WithDuplicateExternalId_ReturnsBadRequest()
+    {
+        // CREATE first user
+        var firstUser = new UserModel
+        {
+            ExternalId = $"auth0|test-first-{Guid.NewGuid()}",
+            DisplayName = "First User"
+        };
+
+        var response = await _client.PostAsJsonAsync("api/v1/users", firstUser);
+        var user1 = await response.Content.ReadFromJsonAsync<UserModel>();
+
+        _output.WriteLine($"CREATE - First user created:\n{JsonSerializer.Serialize(user1, JsonOptions)}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        user1.Should().NotBeNull();
+        user1.Id.Should().BeGreaterThan(0);
+
+        // CREATE second user
+        var secondUser = new UserModel
+        {
+            ExternalId = $"auth0|test-second-{Guid.NewGuid()}",
+            DisplayName = "Second User"
+        };
+
+        response = await _client.PostAsJsonAsync("api/v1/users", secondUser);
+        var user2 = await response.Content.ReadFromJsonAsync<UserModel>();
+
+        _output.WriteLine($"CREATE - Second user created:\n{JsonSerializer.Serialize(user2, JsonOptions)}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        user2.Should().NotBeNull();
+        user2.Id.Should().BeGreaterThan(0);
+
+        // UPDATE second user with first user's ExternalId
+        var updateUser = new UserModel
+        {
+            ExternalId = user1.ExternalId,
+            DisplayName = "Updated Second User"
+        };
+
+        response = await _client.PutAsJsonAsync($"api/v1/users/{user2.Id}", updateUser);
+
+        _output.WriteLine(
+            $"UPDATE - Attempted to update user {user2.Id} with duplicate ExternalId: {updateUser.ExternalId}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        // Cleanup
+        await _client.DeleteAsync($"api/v1/users/{user1.Id}");
+        await _client.DeleteAsync($"api/v1/users/{user2.Id}");
+    }
+
+    [Fact]
+    public async Task GetUser_WithInvalidId_ReturnsNotFound()
+    {
+        const int invalidUserId = 0;
+
+        var response = await _client.GetAsync($"api/v1/users/{invalidUserId}");
+
+        _output.WriteLine($"GET - Attempted to retrieve user with invalid ID: {invalidUserId}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task UpdateUser_WithInvalidId_ReturnsNotFound()
+    {
+        const int invalidUserId = 0;
+        var updateUser = new UserModel
+        {
+            ExternalId = $"auth0|test-update-invalid-{Guid.NewGuid()}",
+            DisplayName = "Update Invalid Test"
+        };
+
+        var response = await _client.PutAsJsonAsync($"api/v1/users/{invalidUserId}", updateUser);
+
+        _output.WriteLine($"UPDATE - Attempted to update user with invalid ID: {invalidUserId}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteUser_WithInvalidId_ReturnsNotFound()
+    {
+        const int invalidUserId = 0;
+
+        var response = await _client.DeleteAsync($"api/v1/users/{invalidUserId}");
+
+        _output.WriteLine($"DELETE - Attempted to delete user with invalid ID: {invalidUserId}");
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
