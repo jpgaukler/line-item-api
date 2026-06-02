@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
+using Dapper;
 using LineItem.Models;
-using LineItem.Repositories.Helpers;
 using LineItem.Repositories.Interfaces;
-using Npgsql;
 
 namespace LineItem.Repositories;
 
@@ -17,113 +14,73 @@ public class UserRepository : DatabaseRepository, IUserRepository
 
     public async Task<UserModel> CreateAsync(UserModel user, CancellationToken cancellationToken)
     {
-        const string query = "SELECT * FROM lineitem.app_user_insert(@external_id, @display_name);";
-        var parameters = new Dictionary<string, object>
+        const string sql = "SELECT * FROM lineitem.app_user_insert(@external_id, @display_name);";
+        var parameters = new
         {
-            { "@external_id", user.ExternalId },
-            { "@display_name", user.DisplayName }
+            external_id = user.ExternalId,
+            display_name = user.DisplayName
         };
 
         await using var connection = GetConnection();
         await connection.OpenAsync(cancellationToken);
-        await using var command = CreateCommand(query, parameters, connection);
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-
-        if (await reader.ReadAsync(cancellationToken))
-            return ParseUser(reader);
-
-        throw new Exception("User creation failed; no row returned.");
-    }
-
-    public async Task<UserModel?> RetrieveByIdAsync(long id, CancellationToken cancellationToken)
-    {
-        const string query = "SELECT * FROM lineitem.app_user_retrieve_by_id(@id);";
-        var parameters = new Dictionary<string, object>
-        {
-            { "@id", id }
-        };
-
-        await using var connection = GetConnection();
-        await connection.OpenAsync(cancellationToken);
-        await using var command = CreateCommand(query, parameters, connection);
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-
-        UserModel? user = null;
-
-        if (await reader.ReadAsync(cancellationToken))
-            user = ParseUser(reader);
-
-        return user;
-    }
-
-    public async Task<UserModel?> RetrieveByExternalIdAsync(string externalId, CancellationToken cancellationToken)
-    {
-        const string query = "SELECT * FROM lineitem.app_user_retrieve_by_external_id(@external_id);";
-        var parameters = new Dictionary<string, object>
-        {
-            { "@external_id", externalId }
-        };
-
-        await using var connection = GetConnection();
-        await connection.OpenAsync(cancellationToken);
-        await using var command = CreateCommand(query, parameters, connection);
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-
-        UserModel? user = null;
-
-        if (await reader.ReadAsync(cancellationToken))
-            user = ParseUser(reader);
-
-        return user;
-    }
-
-    public async Task<UserModel?> UpdateAsync(long id, UserModel user, CancellationToken cancellationToken)
-    {
-        const string query = "SELECT * FROM lineitem.app_user_update(@id, @external_id, @display_name);";
-        var parameters = new Dictionary<string, object>
-        {
-            { "@id", id },
-            { "@external_id", user.ExternalId },
-            { "@display_name", user.DisplayName }
-        };
-
-        await using var connection = GetConnection();
-        await connection.OpenAsync(cancellationToken);
-        await using var command = CreateCommand(query, parameters, connection);
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-
-        if (await reader.ReadAsync(cancellationToken))
-            return ParseUser(reader);
-
-        return null;
-    }
-
-
-    public async Task<bool> DeleteAsync(long id, CancellationToken cancellationToken)
-    {
-        const string query = "SELECT lineitem.app_user_delete(@id);";
-        var parameters = new Dictionary<string, object>
-        {
-            { "@id", id }
-        };
-
-        await using var connection = GetConnection();
-        await connection.OpenAsync(cancellationToken);
-        await using var command = CreateCommand(query, parameters, connection);
-        var result = (bool)(await command.ExecuteScalarAsync(cancellationToken) ?? false);
+        var command = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
+        var result = await connection.QuerySingleAsync<UserModel>(command);
 
         return result;
     }
 
-    private static UserModel ParseUser(NpgsqlDataReader r)
+    public async Task<UserModel?> RetrieveByIdAsync(long id, CancellationToken cancellationToken)
     {
-        return new UserModel
+        const string sql = "SELECT * FROM lineitem.app_user_retrieve_by_id(@id);";
+        var parameters = new { id };
+
+        await using var connection = GetConnection();
+        await connection.OpenAsync(cancellationToken);
+        var command = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
+        var result = await connection.QuerySingleOrDefaultAsync<UserModel>(command);
+
+        return result;
+    }
+
+    public async Task<UserModel?> RetrieveByExternalIdAsync(string externalId, CancellationToken cancellationToken)
+    {
+        const string sql = "SELECT * FROM lineitem.app_user_retrieve_by_external_id(@external_id);";
+        var parameters = new { external_id = externalId };
+
+        await using var connection = GetConnection();
+        await connection.OpenAsync(cancellationToken);
+        var command = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
+        var result = await connection.QuerySingleOrDefaultAsync<UserModel>(command);
+
+        return result;
+    }
+
+    public async Task<UserModel?> UpdateAsync(long id, UserModel user, CancellationToken cancellationToken)
+    {
+        const string sql = "SELECT * FROM lineitem.app_user_update(@id, @external_id, @display_name);";
+        var parameters = new
         {
-            Id = r.Long("id"),
-            ExternalId = r.String("external_id"),
-            DisplayName = r.String("display_name"),
-            CreatedAt = r.DateTime("created_at"),
-            UpdatedAt = r.IsNull("updated_at") ? null : r.DateTime("updated_at")
+            id,
+            external_id = user.ExternalId,
+            display_name = user.DisplayName
         };
+
+        await using var connection = GetConnection();
+        await connection.OpenAsync(cancellationToken);
+        var command = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
+        var result = await connection.QuerySingleOrDefaultAsync<UserModel>(command);
+
+        return result;
+    }
+
+    public async Task DeleteAsync(long id, CancellationToken cancellationToken)
+    {
+        const string sql = "SELECT lineitem.app_user_delete(@id);";
+        var parameters = new { id };
+
+        await using var connection = GetConnection();
+        await connection.OpenAsync(cancellationToken);
+        var command = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
+        await connection.ExecuteAsync(command);
     }
 }

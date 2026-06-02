@@ -14,5 +14,5 @@ public interface IUserRepository
 
     public Task<UserModel?> UpdateAsync(long id, UserModel user, CancellationToken cancellationToken);
 
-    public Task<bool> DeleteAsync(long id, CancellationToken cancellationToken);
+    public Task DeleteAsync(long id, CancellationToken cancellationToken);
 }

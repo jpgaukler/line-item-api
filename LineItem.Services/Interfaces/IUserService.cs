@@ -16,5 +16,5 @@ public interface IUserService
         CancellationToken cancellationToken
     );
 
-    public Task<bool> DeleteAsync(long id, CancellationToken cancellationToken);
+    public Task DeleteAsync(long id, CancellationToken cancellationToken);
 }

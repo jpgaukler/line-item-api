@@ -46,9 +46,8 @@ public class UserService : IUserService
         return updatedUser;
     }
 
-    public Task<bool> DeleteAsync(long id, CancellationToken cancellationToken)
+    public Task DeleteAsync(long id, CancellationToken cancellationToken)
     {
-        var result = _userRepository.DeleteAsync(id, cancellationToken);
-        return result;
+        return _userRepository.DeleteAsync(id, cancellationToken);
     }
 }

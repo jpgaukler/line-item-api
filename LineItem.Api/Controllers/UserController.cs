@@ -79,13 +79,9 @@ public class UserController : ControllerBase
 
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAsync(int id, CancellationToken cancellationToken)
     {
-        var result = await _userService.DeleteAsync(id, cancellationToken);
-
-        return result
-            ? NoContent()
-            : NotFound($"User with Id = {id} not found!");
+        await _userService.DeleteAsync(id, cancellationToken);
+        return NoContent();
     }
 }

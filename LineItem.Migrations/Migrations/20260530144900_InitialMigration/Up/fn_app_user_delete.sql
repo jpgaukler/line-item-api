@@ -1,16 +1,10 @@
-CREATE FUNCTION lineitem.app_user_delete(p_id BIGINT)
-  RETURNS BOOLEAN
+CREATE OR REPLACE FUNCTION lineitem.app_user_delete(p_id BIGINT)
+  RETURNS VOID
 AS
 $$
-DECLARE
-  rows_deleted INTEGER;
 BEGIN
   DELETE
   FROM lineitem.app_user
   WHERE id = p_id;
-
-  GET DIAGNOSTICS rows_deleted = ROW_COUNT;
-
-  RETURN rows_deleted > 0;
 END;
 $$ LANGUAGE plpgsql;

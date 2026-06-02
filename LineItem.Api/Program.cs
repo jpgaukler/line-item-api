@@ -1,5 +1,6 @@
 using System;
 using Asp.Versioning;
+using Dapper;
 using LineItem.Repositories;
 using LineItem.Repositories.Helpers;
 using LineItem.Repositories.Interfaces;
@@ -87,6 +88,7 @@ public static class Program
             throw new Exception("Connection string is null or undefined!");
 
         // add repositories
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
         services.AddDatabaseRepository<IUserRepository, UserRepository>(connectionString);
 
         // add services

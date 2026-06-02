@@ -98,6 +98,8 @@ public class UserControllerTests
         // RETRIEVE (verify deletion)
         response = await _client.GetAsync($"api/v1/users/{userId}");
 
+        _output.WriteLine($"RETRIEVE (verify deletion) - Response: {response.StatusCode}");
+
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
@@ -217,18 +219,6 @@ public class UserControllerTests
         var response = await _client.PutAsJsonAsync($"api/v1/users/{invalidUserId}", updateUser);
 
         _output.WriteLine($"UPDATE - Attempted to update user with invalid ID: {invalidUserId}");
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
-
-    [Fact]
-    public async Task DeleteUser_WithInvalidId_ReturnsNotFound()
-    {
-        const int invalidUserId = 0;
-
-        var response = await _client.DeleteAsync($"api/v1/users/{invalidUserId}");
-
-        _output.WriteLine($"DELETE - Attempted to delete user with invalid ID: {invalidUserId}");
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
