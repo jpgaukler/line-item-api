@@ -1,6 +1,7 @@
 using System;
 using Asp.Versioning;
 using Dapper;
+using LineItem.Api.Middleware;
 using LineItem.Repositories;
 using LineItem.Repositories.Helpers;
 using LineItem.Repositories.Interfaces;
@@ -101,7 +102,8 @@ public static class Program
     private static void ConfigureApplication(WebApplication application)
     {
         // Configure the HTTP request pipeline.
-        if (application.Environment.IsDevelopment()) application.UseDeveloperExceptionPage();
+        if (application.Environment.IsDevelopment())
+            application.UseDeveloperExceptionPage();
 
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         application.UseSwagger();
@@ -112,6 +114,8 @@ public static class Program
 
         // configure middleware
         application.UseHttpsRedirection();
+        application.UseAuthentication();
+        application.UseMiddleware<UserContextMiddleware>();
         application.UseAuthorization();
 
         // configure controllers
