@@ -1,5 +1,6 @@
 using System;
 using Asp.Versioning;
+using Auth0.AspNetCore.Authentication.Api;
 using Dapper;
 using LineItem.Api.Middleware;
 using LineItem.Repositories;
@@ -8,6 +9,7 @@ using LineItem.Repositories.Interfaces;
 using LineItem.Services;
 using LineItem.Services.Interfaces;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -82,6 +84,22 @@ public static class Program
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
 
+        // configure authentication
+        services.AddAuth0ApiAuthentication(configuration.GetSection("Auth0"));
+        services.AddAuthorization();
+
+        // configure CORS
+        var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+        services.AddCors(options =>
+        {
+            options.AddDefaultPolicy(policy =>
+            {
+                policy.WithOrigins(allowedOrigins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            });
+        });
+
         // database
         var connectionString = configuration.GetConnectionString("Default");
 
@@ -114,6 +132,8 @@ public static class Program
 
         // configure middleware
         application.UseHttpsRedirection();
+        application.UseRouting();
+        application.UseCors();
         application.UseAuthentication();
         application.UseMiddleware<UserContextMiddleware>();
         application.UseAuthorization();
@@ -123,5 +143,15 @@ public static class Program
 
         // configure health checks
         application.MapHealthChecks("/health");
+
+        // TESTING ONLY
+        // Public endpoint - no authentication required
+        application.MapGet("/api/public", () => Results.Ok(new { Message = "This endpoint is public" }))
+            .WithName("GetPublic");
+
+        // Protected endpoint - requires authentication
+        application.MapGet("/api/private", () => Results.Ok(new { Message = "This endpoint requires authentication" }))
+            .RequireAuthorization()
+            .WithName("GetPrivate");
     }
 }
