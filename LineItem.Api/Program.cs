@@ -115,6 +115,9 @@ public static class Program
 
         // Configure health checks
         services.AddHealthChecks();
+
+        // add cache for user context
+        services.AddMemoryCache();
     }
 
     private static void ConfigureApplication(WebApplication application)
