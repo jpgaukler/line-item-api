@@ -43,7 +43,9 @@ public class UserContextMiddleware
                         var newUser = new UserModel
                         {
                             ExternalId = externalId,
-                            DisplayName = context.User.FindFirst("https://line-item.app/name")?.Value ?? ""
+                            DisplayName =
+                                // custom claim added by Auth0 'post-login' trigger
+                                context.User.FindFirst("https://line-item.app/name")?.Value ?? ""
                         };
                         user = await userRepository.CreateAsync(newUser, context.RequestAborted);
                     }
