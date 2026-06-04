@@ -22,9 +22,7 @@ public class UserController : ControllerBase
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreateAsync(
-        [FromBody] UserModel user,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateAsync([FromBody] UserModel user, CancellationToken cancellationToken)
     {
         try
         {

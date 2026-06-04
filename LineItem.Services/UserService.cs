@@ -4,19 +4,16 @@ using LineItem.Exceptions;
 using LineItem.Models;
 using LineItem.Repositories.Interfaces;
 using LineItem.Services.Interfaces;
-using Microsoft.Extensions.Logging;
 
 namespace LineItem.Services;
 
 public class UserService : IUserService
 {
-    private readonly ILogger<UserService> _logger;
     private readonly IUserRepository _userRepository;
 
-    public UserService(IUserRepository userRepository, ILogger<UserService> logger)
+    public UserService(IUserRepository userRepository)
     {
         _userRepository = userRepository;
-        _logger = logger;
     }
 
     public async Task<UserModel> CreateAsync(UserModel user, CancellationToken cancellationToken)
@@ -33,6 +30,11 @@ public class UserService : IUserService
     public Task<UserModel?> RetrieveByIdAsync(long id, CancellationToken cancellationToken)
     {
         return _userRepository.RetrieveByIdAsync(id, cancellationToken);
+    }
+
+    public Task<UserModel?> RetrieveByExternalIdAsync(string externalId, CancellationToken cancellationToken)
+    {
+        return _userRepository.RetrieveByExternalIdAsync(externalId, cancellationToken);
     }
 
     public async Task<UserModel?> UpdateAsync(long id, UserModel user, CancellationToken cancellationToken)

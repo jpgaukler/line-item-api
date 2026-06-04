@@ -10,6 +10,8 @@ namespace LineItem.Api.Middleware;
 
 public class UserContextMiddleware
 {
+    private static readonly TimeSpan CACHE_SLIDING_EXPIRATION = TimeSpan.FromHours(1);
+    private static readonly TimeSpan CACHE_ABSOLUTE_EXPIRATION = TimeSpan.FromHours(4);
     private readonly IMemoryCache _cache;
     private readonly RequestDelegate _next;
 
@@ -31,8 +33,8 @@ public class UserContextMiddleware
 
                 var userId = await _cache.GetOrCreateAsync(cacheKey, async entry =>
                 {
-                    entry.SlidingExpiration = TimeSpan.FromHours(1);
-                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(4);
+                    entry.SlidingExpiration = CACHE_SLIDING_EXPIRATION;
+                    entry.AbsoluteExpirationRelativeToNow = CACHE_ABSOLUTE_EXPIRATION;
 
                     var user = await userRepository.RetrieveByExternalIdAsync(externalId, context.RequestAborted);
 
@@ -41,7 +43,7 @@ public class UserContextMiddleware
                         var newUser = new UserModel
                         {
                             ExternalId = externalId,
-                            DisplayName = context.User.FindFirst(ClaimTypes.Email)?.Value ?? ""
+                            DisplayName = context.User.FindFirst("https://line-item.app/name")?.Value ?? ""
                         };
                         user = await userRepository.CreateAsync(newUser, context.RequestAborted);
                     }

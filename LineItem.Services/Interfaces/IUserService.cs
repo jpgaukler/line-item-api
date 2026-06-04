@@ -10,11 +10,9 @@ public interface IUserService
 
     public Task<UserModel?> RetrieveByIdAsync(long id, CancellationToken cancellationToken);
 
-    public Task<UserModel?> UpdateAsync(
-        long id,
-        UserModel user,
-        CancellationToken cancellationToken
-    );
+    public Task<UserModel?> RetrieveByExternalIdAsync(string externalId, CancellationToken cancellationToken);
+
+    public Task<UserModel?> UpdateAsync(long id, UserModel user, CancellationToken cancellationToken);
 
     public Task DeleteAsync(long id, CancellationToken cancellationToken);
 }
