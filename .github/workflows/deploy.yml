@@ -1,0 +1,39 @@
+name: Deploy API to ECS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6.0.2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6.1.0
+        with:
+          aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push Docker Image
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --tag ${{ steps.login-ecr.outputs.registry }}/${{ vars.AWS_ECR_REPO_NAME }}:latest \
+            --push .
+
+      - name: Force ECS Service Deployment
+        run: |
+          aws ecs update-service \
+            --cluster default \
+            --service ${{ vars.AWS_ECS_SERVICE_NAME }} \
+            --force-new-deployment
+          
