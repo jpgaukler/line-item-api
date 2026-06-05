@@ -7,8 +7,9 @@ on:
       - main
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6.0.2
@@ -28,7 +29,7 @@ jobs:
         run: |
           docker buildx build \
             --platform linux/amd64 \
-            --tag ${{ steps.login-ecr.outputs.registry }}/${{ vars.AWS_ECR_REPO_NAME }}:latest \
+            --tag ${{ vars.AWS_ECR_REPO_URL }}:latest \
             --push .
 
       - name: Force ECS Service Deployment
