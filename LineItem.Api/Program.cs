@@ -149,11 +149,11 @@ public static class Program
 
         // TESTING ONLY
         // Public endpoint - no authentication required
-        application.MapGet("/api/public", () => Results.Ok(new { Message = "This endpoint is public" }))
+        application.MapGet("/public", () => Results.Ok(new { Message = "This endpoint is public" }))
             .WithName("GetPublic");
 
         // Protected endpoint - requires authentication
-        application.MapGet("/api/private", () => Results.Ok(new { Message = "This endpoint requires authentication" }))
+        application.MapGet("/private", () => Results.Ok(new { Message = "This endpoint requires authentication" }))
             .RequireAuthorization()
             .WithName("GetPrivate");
     }

@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LineItem.Api.Controllers;
 
 [ApiController]
-[Route("api/v{version:apiVersion}/users")]
+[Route("v{version:apiVersion}/users")]
 public class UserController : ControllerBase
 {
     private readonly IUserService _userService;
