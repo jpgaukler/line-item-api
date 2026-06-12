@@ -1,11 +1,11 @@
 using System;
 using Asp.Versioning;
 using Auth0.AspNetCore.Authentication.Api;
-using Dapper;
 using LineItem.Api.Middleware;
 using LineItem.Repositories;
 using LineItem.Repositories.Helpers;
 using LineItem.Repositories.Interfaces;
+using LineItem.Repositories.Options;
 using LineItem.Services;
 using LineItem.Services.Interfaces;
 using Microsoft.AspNetCore.Builder;
@@ -28,14 +28,14 @@ public static class Program
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Configure the services collection
+            // configure the service collection
             ConfigureServices(builder.Services, builder.Configuration);
 
-            // Configure and run the application
+            // configure and run the application
             var application = builder.Build();
             ConfigureApplication(application);
 
-            // Start the application
+            // start the application
             application.Run();
         }
         catch (Exception ex)
@@ -75,10 +75,10 @@ public static class Program
                 options.SubstituteApiVersionInUrl = true;
             });
 
-        // Add services to the container.
+        // add services to the container.
         services.AddControllers(options =>
         {
-            // Stops ASP.NET Core from removing "Async" from action names
+            // stops ASP.NET Core from removing "Async" from action names
             options.SuppressAsyncSuffixInActionNames = false;
         });
         services.AddEndpointsApiExplorer();
@@ -100,15 +100,23 @@ public static class Program
             });
         });
 
-        // database
-        var connectionString = configuration.GetConnectionString("Default");
-
-        if (string.IsNullOrEmpty(connectionString))
-            throw new Exception("Connection string is null or undefined!");
+        // set up database options
+        services.AddOptions<DatabaseOptions>()
+            .Bind(configuration.GetSection("DatabaseOptions"))
+            .Validate(options =>
+                    !string.IsNullOrWhiteSpace(options.Host) &&
+                    !string.IsNullOrWhiteSpace(options.Port) &&
+                    !string.IsNullOrWhiteSpace(options.Database) &&
+                    !string.IsNullOrWhiteSpace(options.Username) &&
+                    !string.IsNullOrWhiteSpace(options.Password),
+                "DatabaseOptions is invalid. Host, Port, Database, Username, and Password are required."
+            )
+            .ValidateOnStart();
 
         // add repositories
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-        services.AddDatabaseRepository<IUserRepository, UserRepository>(connectionString);
+        services
+            .ConfigureDapperMapping()
+            .AddScoped<IUserRepository, UserRepository>();
 
         // add services
         services.AddScoped<IUserService, UserService>();
@@ -122,11 +130,11 @@ public static class Program
 
     private static void ConfigureApplication(WebApplication application)
     {
-        // Configure the HTTP request pipeline.
+        // configure the HTTP request pipeline.
         if (application.Environment.IsDevelopment())
             application.UseDeveloperExceptionPage();
 
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+        // learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         application.UseSwagger();
         application.UseSwaggerUI();
 

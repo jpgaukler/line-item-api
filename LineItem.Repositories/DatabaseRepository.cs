@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using LineItem.Repositories.Helpers;
+﻿using LineItem.Repositories.Options;
+using Microsoft.Extensions.Options;
 using Npgsql;
 
 namespace LineItem.Repositories;
@@ -8,25 +8,13 @@ public class DatabaseRepository
 {
     private readonly string _connectionString;
 
-    protected DatabaseRepository(string connectionString)
+    protected DatabaseRepository(IOptions<DatabaseOptions> options)
     {
-        _connectionString = connectionString;
+        _connectionString = options.Value.ConnectionString;
     }
 
     protected NpgsqlConnection GetConnection()
     {
         return new NpgsqlConnection(_connectionString);
-    }
-
-    protected static NpgsqlCommand CreateCommand(
-        string query,
-        IEnumerable<KeyValuePair<string, object>> parameters,
-        NpgsqlConnection connection,
-        NpgsqlTransaction? transaction = null
-    )
-    {
-        var command = new NpgsqlCommand(query, connection, transaction);
-        command.AddParameters(parameters);
-        return command;
     }
 }

@@ -3,12 +3,14 @@ using System.Threading.Tasks;
 using Dapper;
 using LineItem.Models;
 using LineItem.Repositories.Interfaces;
+using LineItem.Repositories.Options;
+using Microsoft.Extensions.Options;
 
 namespace LineItem.Repositories;
 
 public class UserRepository : DatabaseRepository, IUserRepository
 {
-    public UserRepository(string connectionString) : base(connectionString)
+    public UserRepository(IOptions<DatabaseOptions> options) : base(options)
     {
     }
 

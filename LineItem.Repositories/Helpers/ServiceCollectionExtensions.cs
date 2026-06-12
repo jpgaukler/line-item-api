@@ -1,18 +1,13 @@
+using Dapper;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LineItem.Repositories.Helpers;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddDatabaseRepository<TInterface, TImplementation>(
-        this IServiceCollection services,
-        string connectionString)
-        where TInterface : class
-        where TImplementation : DatabaseRepository, TInterface
+    public static IServiceCollection ConfigureDapperMapping(this IServiceCollection services)
     {
-        services.AddScoped<TInterface, TImplementation>(serviceProvider =>
-            ActivatorUtilities.CreateInstance<TImplementation>(serviceProvider, connectionString));
-
+        DefaultTypeMap.MatchNamesWithUnderscores = true;
         return services;
     }
 }
