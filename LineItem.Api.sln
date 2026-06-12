@@ -23,6 +23,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Dockerfile = Dockerfile
 		.dockerignore = .dockerignore
 		.github\workflows\deploy.yml = .github\workflows\deploy.yml
+		Dockerfile.migrations = Dockerfile.migrations
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LineItem.Exceptions", "LineItem.Exceptions\LineItem.Exceptions.csproj", "{70248C91-1403-42AD-A0D8-635CC02B008A}"
