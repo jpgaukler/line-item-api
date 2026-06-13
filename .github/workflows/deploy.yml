@@ -25,16 +25,16 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build and Push Docker Image
+      - name: Build and Push API Image
         run: |
-          # Build and push the API image
           docker buildx build \
             --platform linux/amd64 \
             --file Dockerfile \
             --tag ${{ vars.AWS_ECR_API_REPO_URL }}:latest \
             --push .
-          
-          # Build and push the migrations image
+
+      - name: Build and Push Migrations Image
+        run: |
           docker buildx build \
             --platform linux/amd64 \
             --file Dockerfile.migrations \
