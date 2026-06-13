@@ -5,7 +5,6 @@ using LineItem.Api.Middleware;
 using LineItem.Repositories;
 using LineItem.Repositories.Helpers;
 using LineItem.Repositories.Interfaces;
-using LineItem.Repositories.Options;
 using LineItem.Services;
 using LineItem.Services.Interfaces;
 using Microsoft.AspNetCore.Builder;
@@ -100,22 +99,10 @@ public static class Program
             });
         });
 
-        // set up database options
-        services.AddOptions<DatabaseOptions>()
-            .Bind(configuration.GetSection("DatabaseOptions"))
-            .Validate(options =>
-                    !string.IsNullOrWhiteSpace(options.Host) &&
-                    !string.IsNullOrWhiteSpace(options.Port) &&
-                    !string.IsNullOrWhiteSpace(options.Database) &&
-                    !string.IsNullOrWhiteSpace(options.Username) &&
-                    !string.IsNullOrWhiteSpace(options.Password),
-                "DatabaseOptions is invalid. Host, Port, Database, Username, and Password are required."
-            )
-            .ValidateOnStart();
-
         // add repositories
         services
             .ConfigureDapperMapping()
+            .AddDatabaseOptions(configuration)
             .AddScoped<IUserRepository, UserRepository>();
 
         // add services

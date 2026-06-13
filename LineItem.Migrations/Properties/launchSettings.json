@@ -2,11 +2,17 @@
   "profiles": {
     "Migrate Up": {
       "commandName": "Project",
-      "commandLineArgs": "--connectionString=\"Host=localhost;Port=5432;Database=dev;Username=justin;Password=password123\" \n"
+      "commandLineArgs": "",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
     },
     "Migrate Down (to 0)": {
       "commandName": "Project",
-      "commandLineArgs": "--connectionString=\"Host=localhost;Port=5432;Database=dev;Username=justin;Password=password123\" \n --downgradeToRevision=0"
+      "commandLineArgs": "--downgradeToRevision=0",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
     }
   }
 }
