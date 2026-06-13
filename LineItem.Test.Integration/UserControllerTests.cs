@@ -22,7 +22,8 @@ public class UserControllerTests
         _output = output;
         _client = new HttpClient
         {
-            BaseAddress = new Uri("https://localhost:7165/")
+            // BaseAddress = new Uri("https://localhost:7165/")
+            BaseAddress = new Uri("https://dev.api.line-item.app")
         };
     }
 
@@ -36,14 +37,14 @@ public class UserControllerTests
             DisplayName = "CRUD Test"
         };
 
-        var response = await _client.PostAsJsonAsync("api/v1/users", newUser);
+        var response = await _client.PostAsJsonAsync("v1/users", newUser);
         var user = await response.Content.ReadFromJsonAsync<UserModel>();
 
         _output.WriteLine($"CREATE - User created:\n{JsonSerializer.Serialize(user, JsonOptions)}");
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.Should().NotBeNull();
-        response.Headers.Location.ToString().Should().Contain("/api/v1/users/");
+        response.Headers.Location.ToString().Should().Contain("v1/users/");
         user.Should().NotBeNull();
         user.Id.Should().BeGreaterThan(0);
         user.ExternalId.Should().Be(newUser.ExternalId);
@@ -74,7 +75,7 @@ public class UserControllerTests
             DisplayName = "CRUD Test Updated"
         };
 
-        response = await _client.PutAsJsonAsync($"api/v1/users/{userId}", updatedUser);
+        response = await _client.PutAsJsonAsync($"v1/users/{userId}", updatedUser);
         user = await response.Content.ReadFromJsonAsync<UserModel>();
 
         _output.WriteLine($"UPDATE - User updated:\n{JsonSerializer.Serialize(user, JsonOptions)}");
@@ -89,14 +90,14 @@ public class UserControllerTests
         user.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
 
         // DELETE
-        response = await _client.DeleteAsync($"api/v1/users/{userId}");
+        response = await _client.DeleteAsync($"v1/users/{userId}");
 
         _output.WriteLine($"DELETE - User deleted: UserId={userId}");
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         // RETRIEVE (verify deletion)
-        response = await _client.GetAsync($"api/v1/users/{userId}");
+        response = await _client.GetAsync($"v1/users/{userId}");
 
         _output.WriteLine($"RETRIEVE (verify deletion) - Response: {response.StatusCode}");
 
@@ -114,7 +115,7 @@ public class UserControllerTests
             DisplayName = "Duplicate Test"
         };
 
-        var response = await _client.PostAsJsonAsync("api/v1/users", newUser);
+        var response = await _client.PostAsJsonAsync("v1/users", newUser);
         var user = await response.Content.ReadFromJsonAsync<UserModel>();
 
         _output.WriteLine($"CREATE - First user created:\n{JsonSerializer.Serialize(user, JsonOptions)}");
@@ -130,14 +131,14 @@ public class UserControllerTests
             DisplayName = "Duplicate Test 2"
         };
 
-        response = await _client.PostAsJsonAsync("api/v1/users", duplicateUser);
+        response = await _client.PostAsJsonAsync("v1/users", duplicateUser);
 
         _output.WriteLine($"CREATE - Attempted duplicate user creation with ExternalId: {duplicateUser.ExternalId}");
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         // Cleanup
-        await _client.DeleteAsync($"api/v1/users/{user.Id}");
+        await _client.DeleteAsync($"v1/users/{user.Id}");
     }
 
     [Fact]
@@ -150,7 +151,7 @@ public class UserControllerTests
             DisplayName = "First User"
         };
 
-        var response = await _client.PostAsJsonAsync("api/v1/users", firstUser);
+        var response = await _client.PostAsJsonAsync("v1/users", firstUser);
         var user1 = await response.Content.ReadFromJsonAsync<UserModel>();
 
         _output.WriteLine($"CREATE - First user created:\n{JsonSerializer.Serialize(user1, JsonOptions)}");
@@ -166,7 +167,7 @@ public class UserControllerTests
             DisplayName = "Second User"
         };
 
-        response = await _client.PostAsJsonAsync("api/v1/users", secondUser);
+        response = await _client.PostAsJsonAsync("v1/users", secondUser);
         var user2 = await response.Content.ReadFromJsonAsync<UserModel>();
 
         _output.WriteLine($"CREATE - Second user created:\n{JsonSerializer.Serialize(user2, JsonOptions)}");
@@ -182,7 +183,7 @@ public class UserControllerTests
             DisplayName = "Updated Second User"
         };
 
-        response = await _client.PutAsJsonAsync($"api/v1/users/{user2.Id}", updateUser);
+        response = await _client.PutAsJsonAsync($"v1/users/{user2.Id}", updateUser);
 
         _output.WriteLine(
             $"UPDATE - Attempted to update user {user2.Id} with duplicate ExternalId: {updateUser.ExternalId}");
@@ -190,8 +191,8 @@ public class UserControllerTests
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         // Cleanup
-        await _client.DeleteAsync($"api/v1/users/{user1.Id}");
-        await _client.DeleteAsync($"api/v1/users/{user2.Id}");
+        await _client.DeleteAsync($"v1/users/{user1.Id}");
+        await _client.DeleteAsync($"v1/users/{user2.Id}");
     }
 
     [Fact]
@@ -199,7 +200,7 @@ public class UserControllerTests
     {
         const int invalidUserId = 0;
 
-        var response = await _client.GetAsync($"api/v1/users/{invalidUserId}");
+        var response = await _client.GetAsync($"v1/users/{invalidUserId}");
 
         _output.WriteLine($"GET - Attempted to retrieve user with invalid ID: {invalidUserId}");
 
@@ -216,7 +217,7 @@ public class UserControllerTests
             DisplayName = "Update Invalid Test"
         };
 
-        var response = await _client.PutAsJsonAsync($"api/v1/users/{invalidUserId}", updateUser);
+        var response = await _client.PutAsJsonAsync($"v1/users/{invalidUserId}", updateUser);
 
         _output.WriteLine($"UPDATE - Attempted to update user with invalid ID: {invalidUserId}");
 
