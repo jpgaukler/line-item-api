@@ -27,15 +27,58 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
+          # Build and push the API image
           docker buildx build \
             --platform linux/amd64 \
-            --tag ${{ vars.AWS_ECR_REPO_URL }}:latest \
+            --dockerfile Dockerfile \
+            --tag ${{ vars.AWS_ECR_API_REPO_URL }}:latest \
+            --push .
+          
+          # Build and push the migrations image
+          docker buildx build \
+            --platform linux/amd64 \
+            --dockerfile Dockerfile.migrations \
+            --tag ${{ vars.AWS_ECR_MIGRATIONS_REPO_URL }}:latest \
             --push .
 
-      - name: Force ECS Service Deployment
+      - name: Run Database Migrations
+        id: run-task
         run: |
-          aws ecs update-service \
-            --cluster default \
-            --service ${{ vars.AWS_ECS_SERVICE_NAME }} \
-            --force-new-deployment
+          # Start the migration task
+          TASK_ARN=$(aws ecs run-task \
+            --region ${{ vars.AWS_REGION }} \
+            --cluster ${{ vars.AWS_ECS_CLUSTER_NAME }} \
+            --task-definition ${{ vars.AWS_MIGRATIONS_TASK_DEFINITION_NAME }} \
+            --launch-type FARGATE \
+            --network-configuration '${{ vars.AWS_NETWORK_CONFIGURATION }}' \
+            --query "tasks[0].taskArn" \
+            --output text)
+          echo "Started migrations task: $TASK_ARN"
+          
+          # Wait until the task enters the STOPPED state
+          echo "Waiting for task to complete..."
+          aws ecs wait tasks-stopped \
+            --region ${{ vars.AWS_REGION }} \
+            --cluster ${{ vars.AWS_ECS_CLUSTER_NAME }} \
+            --tasks "$TASK_ARN"
+          
+          # Check if the task failed or was killed
+          EXIT_CODE=$(aws ecs describe-tasks \
+            --region ${{ vars.AWS_REGION }} \
+            --cluster ${{ vars.AWS_ECS_CLUSTER_NAME }} \
+            --tasks "$TASK_ARN" \
+            --query "tasks[0].containers[0].exitCode" \
+            --output text)
+          if [ "$EXIT_CODE" = "None" ] || [ "$EXIT_CODE" -ne 0 ]; then
+            echo "Error: Migration failed or container was stopped prematurely. Exit code: $EXIT_CODE"
+            exit 1
+          fi
+          echo "Task finished successfully!"
+          
+          #      - name: Force ECS Service Deployment
+          #        run: |
+          #          aws ecs update-service \
+          #            --cluster default \
+          #            --service ${{ vars.AWS_ECS_SERVICE_NAME }} \
+          #            --force-new-deployment
           
