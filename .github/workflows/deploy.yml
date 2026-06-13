@@ -30,14 +30,14 @@ jobs:
           # Build and push the API image
           docker buildx build \
             --platform linux/amd64 \
-            --dockerfile Dockerfile \
+            --file Dockerfile \
             --tag ${{ vars.AWS_ECR_API_REPO_URL }}:latest \
             --push .
           
           # Build and push the migrations image
           docker buildx build \
             --platform linux/amd64 \
-            --dockerfile Dockerfile.migrations \
+            --file Dockerfile.migrations \
             --tag ${{ vars.AWS_ECR_MIGRATIONS_REPO_URL }}:latest \
             --push .
 
