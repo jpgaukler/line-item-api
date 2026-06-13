@@ -70,7 +70,8 @@ public class Program
             .AddLogging(loggingBuilder => loggingBuilder.AddFluentMigratorConsole());
 
         // force connection string to resolve from IOptions after the ServiceProvider is built
-        services.AddOptions<ProcessorOptions>()
+        services
+            .AddOptions<ProcessorOptions>()
             .PostConfigure<IOptions<DatabaseOptions>>((processorOptions, databaseOptions) =>
                 processorOptions.ConnectionString = databaseOptions.Value.ConnectionString
             );
