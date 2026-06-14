@@ -142,7 +142,7 @@ jobs:
         id: update-task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition-arn: ${{ vars.AWS_API_TASK_DEFINITION_NAME }}
+          task-definition-family: "line-item-dev-ecs-service"
           container-name: ${{ vars.AWS_API_CONTAINER_NAME }}
           image: ${{ steps.build-api-image.outputs.image }}
       
