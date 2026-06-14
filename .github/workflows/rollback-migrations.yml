@@ -22,7 +22,15 @@ jobs:
 
       - name: Rollback Database Migrations
         run: |
-          OVERRIDES='{"containerOverrides": [{"name": "${{ vars.AWS_MIGRATIONS_CONTAINER_NAME }}", "command": ["--downgradeToRevision='${{ inputs.downgradeToRevision }}'"]}]'
+          OVERRIDES: |
+            {
+              "containerOverrides": [
+                {
+                  "name": "${{ vars.AWS_MIGRATIONS_CONTAINER_NAME }}",
+                  "command": ["--downgradeToRevision=${{ inputs.downgradeToRevision }}"]
+                }
+              ]
+            }
 
           # Start the migration task
           TASK_ARN=$(aws ecs run-task \
