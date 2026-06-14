@@ -42,13 +42,6 @@ jobs:
 
       - name: Run Database Migrations
         run: |
-          # 1. Format the .NET command line argument as a JSON string array
-          NET_ARGS='["--downgradeToRevision=0"]'
-          
-          # 2. Construct the full ECS overrides JSON payload
-          OVERRIDES='{"containerOverrides": [{"name": "line-item-migrations", "command": '$NET_ARGS'}]}'
-
-
           # Start the migration task
           TASK_ARN=$(aws ecs run-task \
             --region ${{ vars.AWS_REGION }} \
@@ -56,7 +49,6 @@ jobs:
             --task-definition ${{ vars.AWS_MIGRATIONS_TASK_DEFINITION_NAME }} \
             --launch-type FARGATE \
             --network-configuration '${{ vars.AWS_NETWORK_CONFIGURATION }}' \
-            --overrides "$OVERRIDES" \
             --query "tasks[0].taskArn" \
             --output text)
           TASK_ID=$(echo $TASK_ARN | awk -F/ '{print $NF}')
