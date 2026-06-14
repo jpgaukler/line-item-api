@@ -46,29 +46,37 @@ jobs:
         run: |
           # Start the migration task
           TASK_ARN=$(aws ecs run-task \
-            --region ${{ vars.AWS_REGION }} \
-            --cluster ${{ vars.AWS_ECS_CLUSTER_NAME }} \
-            --task-definition ${{ vars.AWS_MIGRATIONS_TASK_DEFINITION_NAME }} \
-            --launch-type FARGATE \
-            --network-configuration '${{ vars.AWS_NETWORK_CONFIGURATION }}' \
-            --query "tasks[0].taskArn" \
-            --output text)
+          --region ${{ vars.AWS_REGION }} \
+          --cluster ${{ vars.AWS_ECS_CLUSTER_NAME }} \
+          --task-definition ${{ vars.AWS_MIGRATIONS_TASK_DEFINITION_NAME }} \
+          --launch-type FARGATE \
+          --network-configuration '${{ vars.AWS_NETWORK_CONFIGURATION }}' \
+          --query "tasks[0].taskArn" \
+          --output text)
           echo "Started migrations task: $TASK_ARN"
           
           # Wait until the task enters the STOPPED state
-          echo "Waiting for task to complete..."
-          aws ecs wait tasks-stopped \
-            --region ${{ vars.AWS_REGION }} \
-            --cluster ${{ vars.AWS_ECS_CLUSTER_NAME }} \
-            --tasks "$TASK_ARN"
+          # echo "Waiting for task to complete..."
+          #          aws ecs wait tasks-stopped \
+          #            --region ${{ vars.AWS_REGION }} \
+          #            --cluster ${{ vars.AWS_ECS_CLUSTER_NAME }} \
+          #            --tasks "$TASK_ARN"
+          
+          TASK_ID=$(echo $TASK_ARN | awk -F/ '{print $NF}')
+          echo "Task ID extracted: $TASK_ID"
+          
+          aws logs tail "${{ vars.AWS_MIGRATIONS_LOG_GROUP_NAME }}" \
+          --region ${{ vars.AWS_REGION }} \
+          --log-stream-name-prefix "${{ vars.AWS_MIGRATIONS_LOG_STREAM_PREFIX }}/$TASK_ID" \
+          --format short
           
           # Check if the task failed or was killed
           EXIT_CODE=$(aws ecs describe-tasks \
-            --region ${{ vars.AWS_REGION }} \
-            --cluster ${{ vars.AWS_ECS_CLUSTER_NAME }} \
-            --tasks "$TASK_ARN" \
-            --query "tasks[0].containers[0].exitCode" \
-            --output text)
+          --region ${{ vars.AWS_REGION }} \
+          --cluster ${{ vars.AWS_ECS_CLUSTER_NAME }} \
+          --tasks "$TASK_ARN" \
+          --query "tasks[0].containers[0].exitCode" \
+          --output text)
           if [ "$EXIT_CODE" = "None" ] || [ "$EXIT_CODE" -ne 0 ]; then
             echo "Error: Migration failed or container was stopped prematurely. Exit code: $EXIT_CODE"
             exit 1
