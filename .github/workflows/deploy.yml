@@ -119,6 +119,9 @@ jobs:
             --tag $ECR_REPOSITORY:$IMAGE_TAG \
             --push .
           echo "image=$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+    outputs:
+      api_image_uri: ${{ steps.build-api-image.outputs.image }}
   
   deploy-api:
     runs-on: ubuntu-latest
@@ -144,7 +147,7 @@ jobs:
         with:
           task-definition-family: "line-item-dev-ecs-service"
           container-name: ${{ vars.AWS_API_CONTAINER_NAME }}
-          image: ${{ steps.build-api-image.outputs.image }}
+          image: ${{ needs.build-api.outputs.api_image_uri }}
       
       # 6. Deploy the updated Task Definition to the ECS Service
       - name: Deploy ECS Task Definition
