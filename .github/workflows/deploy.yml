@@ -7,9 +7,8 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  build-migrations:
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6.0.2
@@ -24,14 +23,6 @@ jobs:
       - name: Log in to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build and Push API Image
-        run: |
-          docker buildx build \
-            --platform linux/amd64 \
-            --file Dockerfile \
-            --tag ${{ vars.AWS_ECR_API_REPO_URL }}:latest \
-            --push .
-
       - name: Build and Push Migrations Image
         run: |
           docker buildx build \
@@ -39,6 +30,17 @@ jobs:
             --file Dockerfile.migrations \
             --tag ${{ vars.AWS_ECR_MIGRATIONS_REPO_URL }}:latest \
             --push .
+
+  migrate-database:
+    runs-on: ubuntu-latest
+    needs: build-migrations
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6.1.0
+        with:
+          aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Run Database Migrations
         run: |
@@ -86,6 +88,42 @@ jobs:
           fi
           
           echo "Task finished successfully!"
+  
+  build-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6.0.2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6.1.0
+        with:
+          aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push API Image
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --file Dockerfile \
+            --tag ${{ vars.AWS_ECR_API_REPO_URL }}:latest \
+            --push .
+  
+  
+  deploy-api:
+    runs-on: ubuntu-latest
+    needs: build-api
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6.1.0
+        with:
+          aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Force ECS Service Deployment
         run: |
@@ -94,4 +132,3 @@ jobs:
           #            --cluster default \
           #            --service ${{ vars.AWS_ECS_SERVICE_NAME }} \
           #            --force-new-deployment
-          
