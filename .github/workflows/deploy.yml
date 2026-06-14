@@ -116,7 +116,7 @@ jobs:
   
   deploy-api:
     runs-on: ubuntu-latest
-    needs: build-api
+    needs: [ build-api, migrate-database ]
     steps:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v6.1.0
