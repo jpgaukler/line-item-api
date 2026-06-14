@@ -51,20 +51,24 @@ jobs:
             --network-configuration '${{ vars.AWS_NETWORK_CONFIGURATION }}' \
             --query "tasks[0].taskArn" \
             --output text)
-          echo "Started migrations task: $TASK_ARN"
+          TASK_ID=$(echo $TASK_ARN | awk -F/ '{print $NF}')
+          
+          echo "Started migrations task:"
+          echo "TASK_ARN: $TASK_ARN"
+          echo "TASK_ID: $TASK_ID"
           
           # Wait until the task enters the STOPPED state
-          echo "Waiting for task to complete..."
+          echo "Waiting for task to finish..."
           aws ecs wait tasks-stopped \
             --region ${{ vars.AWS_REGION }} \
             --cluster ${{ vars.AWS_ECS_CLUSTER_NAME }} \
             --tasks "$TASK_ARN"
           
-          # Output logs from the task
-          echo "Waiting 15 seconds for CloudWatch ingestion..."
+          # Wait 15 seconds for CloudWatch ingestion to finalize
           sleep 15
+          
+          # Output logs from the task
           echo "--- BEGIN MIGRATION LOGS ---"
-          TASK_ID=$(echo $TASK_ARN | awk -F/ '{print $NF}')
           aws logs tail "${{ vars.AWS_MIGRATIONS_LOG_GROUP_NAME }}" \
             --region ${{ vars.AWS_REGION }} \
             --log-stream-name-prefix "${{ vars.AWS_MIGRATIONS_LOG_STREAM_PREFIX }}/$TASK_ID" \
@@ -78,10 +82,12 @@ jobs:
             --tasks "$TASK_ARN" \
             --query "tasks[0].containers[0].exitCode" \
             --output text)
+          
           if [ "$EXIT_CODE" = "None" ] || [ "$EXIT_CODE" -ne 0 ]; then
             echo "Error: Migration failed or container was stopped prematurely. Exit code: $EXIT_CODE"
             exit 1
           fi
+          
           echo "Task finished successfully!"
 
       - name: Force ECS Service Deployment
