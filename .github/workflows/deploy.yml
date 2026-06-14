@@ -8,6 +8,7 @@ on:
 
 jobs:
   build-migrations:
+    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -32,6 +33,7 @@ jobs:
             --push .
 
   migrate-database:
+    if: false
     runs-on: ubuntu-latest
     needs: build-migrations
     steps:
@@ -106,12 +108,17 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and Push API Image
+        id: build-api-image
+        env:
+          ECR_REPOSITORY: ${{ vars.AWS_ECR_API_REPO_URL }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           docker buildx build \
             --platform linux/amd64 \
             --file Dockerfile \
-            --tag ${{ vars.AWS_ECR_API_REPO_URL }}:latest \
+            --tag $ECR_REPOSITORY:$IMAGE_TAG \
             --push .
+          echo "image=$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
   
   deploy-api:
     runs-on: ubuntu-latest
@@ -123,11 +130,57 @@ jobs:
           aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_REGION }}
+      
+      #      - name: Download Active ECS Task Definition
+      #        run: |
+      #          aws ecs describe-task-definition \
+      #            --task-definition my-task-definition-family \
+      #            --query taskDefinition > task-definition.json
 
-      - name: Force ECS Service Deployment
-        run: |
-          echo "Not implemented"
-          #          aws ecs update-service \
-          #            --cluster default \
-          #            --service ${{ vars.AWS_ECS_SERVICE_NAME }} \
-          #            --force-new-deployment
+      - name: Update ECS Task Definition
+        id: update-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition-arn: ${{ vars.AWS_API_TASK_DEFINITION_NAME }}
+          container-name: ${{ vars.AWS_API_CONTAINER_NAME }}
+          image: ${{ steps.build-api-image.outputs.image }}
+      
+      # 6. Deploy the updated Task Definition to the ECS Service
+      - name: Deploy ECS Task Definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.update-task-def.outputs.task-definition }}
+          cluster: ${{ vars.AWS_ECS_CLUSTER_NAME }}
+          service: ${{ vars.AWS_ECS_SERVICE_NAME }}
+          wait-for-service-stability: true
+
+
+
+
+
+
+# This might be able to replace all the custom code I wrote for running db migrations
+#      - name: Deploy ECS Task Definition
+#        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+#        with:
+#            # A boolean indicating whether to run a stand-alone task in a ECS cluster. Task will run before the service is updated if both are provided. Default value is false .
+#            run-task: # optional
+#            # A JSON array of container override objects which should applied when running a task outside of a service. Warning: Do not expose this field to untrusted inputs. More details: https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerOverride.html
+#            run-task-container-overrides: # optional
+#            # A comma-separated list of security group IDs to assign to a task when run outside of a service. Will default to none.
+#            run-task-security-groups: # optional
+#            # A comma-separated list of subnet IDs to assign to a task when run outside of a service. Will default to none.
+#            run-task-subnets: # optional
+#            # Whether the task's elastic network interface receives a public IP address. The default value is DISABLED but will only be applied if run-task-subnets or run-task-security-groups are also set.
+#            run-task-assign-public-IP: # optional
+#            # A JSON array of capacity provider strategy items which should applied when running a task outside of a service. Will default to none.
+#            run-task-capacity-provider-strategy: # optional
+#            # ECS launch type for tasks run outside of a service. Valid values are 'FARGATE' or 'EC2'. Will default to 'FARGATE'. Will only be applied if run-task-capacity-provider-strategy is not set.
+#            run-task-launch-type: # optional
+#            # A name to use for the startedBy tag when running a task outside of a service. Will default to 'GitHub-Actions'.
+#            run-task-started-by: # optional
+#            # A JSON array of tags.
+#            run-task-tags: # optional
+#            # Whether to wait for the task to stop when running it outside of a service. Will default to not wait.
+#            wait-for-task-stopped: # optional
+
