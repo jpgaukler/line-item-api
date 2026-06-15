@@ -66,7 +66,7 @@ jobs:
             --cluster $ECS_CLUSTER_NAME \
             --task-definition $TASK_DEFINITION_NAME \
             --launch-type FARGATE \
-            --network-configuration '$NETWORK_CONFIG' \
+            --network-configuration "$NETWORK_CONFIG" \
             --query "tasks[0].taskArn" \
             --output text)
           TASK_ID=$(echo $TASK_ARN | awk -F/ '{print $NF}')
