@@ -6,20 +6,30 @@ on:
     branches:
       - main
 
+env:
+  AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  MIGRATIONS_IMAGE_TAG: "${{ vars.AWS_ECR_MIGRATIONS_REPO_URL }}:${{ github.sha }}"
+  API_IMAGE_TAG: "${{ vars.AWS_ECR_API_REPO_URL }}:${{ github.sha }}"
+  ECS_CLUSTER_NAME: ${{ vars.AWS_ECS_CLUSTER_NAME }}
+  ECS_SERVICE_NAME: ${{ vars.AWS_ECS_SERVICE_NAME }}
+  ECS_API_CONTAINER_NAME: ${{ vars.AWS_API_CONTAINER_NAME }}
+  ECS_API_TASK_DEFINITION_FAMILY_NAME: ${{ vars.AWS_API_TASK_DEFINITION_FAMILY_NAME }}
+
 jobs:
   build-migrations:
-    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6.0.2
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6.1.0
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ vars.AWS_REGION }}
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Log in to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
@@ -29,30 +39,34 @@ jobs:
           docker buildx build \
             --platform linux/amd64 \
             --file Dockerfile.migrations \
-            --tag ${{ vars.AWS_ECR_MIGRATIONS_REPO_URL }}:latest \
+            --tag $MIGRATIONS_IMAGE_TAG \
             --push .
 
   migrate-database:
-    if: false
     runs-on: ubuntu-latest
     needs: build-migrations
     steps:
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6.1.0
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ vars.AWS_REGION }}
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Run Database Migrations
+        env:
+          TASK_DEFINITION_NAME: ${{ vars.AWS_MIGRATIONS_TASK_DEFINITION_NAME }}
+          NETWORK_CONFIG: ${{ vars.AWS_NETWORK_CONFIGURATION }}
+          LOG_GROUP_NAME: ${{ vars.AWS_MIGRATIONS_LOG_GROUP_NAME }}
+          LOG_STREAM_PREFIX: ${{ vars.AWS_MIGRATIONS_LOG_STREAM_PREFIX }}
         run: |
           # Start the migration task
           TASK_ARN=$(aws ecs run-task \
-            --region ${{ vars.AWS_REGION }} \
-            --cluster ${{ vars.AWS_ECS_CLUSTER_NAME }} \
-            --task-definition ${{ vars.AWS_MIGRATIONS_TASK_DEFINITION_NAME }} \
+            --region $AWS_REGION \
+            --cluster $ECS_CLUSTER_NAME \
+            --task-definition $TASK_DEFINITION_NAME \
             --launch-type FARGATE \
-            --network-configuration '${{ vars.AWS_NETWORK_CONFIGURATION }}' \
+            --network-configuration "$NETWORK_CONFIG" \
             --query "tasks[0].taskArn" \
             --output text)
           TASK_ID=$(echo $TASK_ARN | awk -F/ '{print $NF}')
@@ -61,8 +75,8 @@ jobs:
           # Wait until the task enters the STOPPED state
           echo "Waiting for task to finish..."
           aws ecs wait tasks-stopped \
-            --region ${{ vars.AWS_REGION }} \
-            --cluster ${{ vars.AWS_ECS_CLUSTER_NAME }} \
+            --region $AWS_REGION \
+            --cluster $ECS_CLUSTER_NAME \
             --tasks "$TASK_ARN"
           
           # Wait 15 seconds for CloudWatch ingestion to finalize
@@ -70,16 +84,16 @@ jobs:
           
           # Output logs from the task
           echo "--- BEGIN MIGRATION LOGS ---"
-          aws logs tail "${{ vars.AWS_MIGRATIONS_LOG_GROUP_NAME }}" \
-            --region ${{ vars.AWS_REGION }} \
-            --log-stream-name-prefix "${{ vars.AWS_MIGRATIONS_LOG_STREAM_PREFIX }}/$TASK_ID" \
+          aws logs tail "$LOG_GROUP_NAME" \
+            --region $AWS_REGION \
+            --log-stream-name-prefix "$LOG_STREAM_PREFIX/$TASK_ID" \
             --format short
           echo "--- END MIGRATION LOGS ---"
           
           # Check if the task failed or was killed
           EXIT_CODE=$(aws ecs describe-tasks \
-            --region ${{ vars.AWS_REGION }} \
-            --cluster ${{ vars.AWS_ECS_CLUSTER_NAME }} \
+            --region $AWS_REGION \
+            --cluster $ECS_CLUSTER_NAME \
             --tasks "$TASK_ARN" \
             --query "tasks[0].containers[0].exitCode" \
             --output text)
@@ -98,64 +112,48 @@ jobs:
         uses: actions/checkout@v6.0.2
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6.1.0
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ vars.AWS_REGION }}
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Log in to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and Push API Image
-        id: build-api-image
-        env:
-          ECR_REPOSITORY: ${{ vars.AWS_ECR_API_REPO_URL }}
-          IMAGE_TAG: ${{ github.sha }}
         run: |
           docker buildx build \
             --platform linux/amd64 \
             --file Dockerfile \
-            --tag $ECR_REPOSITORY:$IMAGE_TAG \
+            --tag $API_IMAGE_TAG \
             --push .
-          echo "image=$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
-
-    outputs:
-      api_image_uri: ${{ steps.build-api-image.outputs.image }}
   
   deploy-api:
     runs-on: ubuntu-latest
-    #    needs: [ build-api, migrate-database ]
-    needs: build-api
+    needs: [ build-api, migrate-database ]
     steps:
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6.1.0
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ vars.AWS_REGION }}
-      
-      #      - name: Download Active ECS Task Definition
-      #        run: |
-      #          aws ecs describe-task-definition \
-      #            --task-definition my-task-definition-family \
-      #            --query taskDefinition > task-definition.json
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Update ECS Task Definition
         id: update-task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition-family: "line-item-dev-ecs-service"
-          container-name: ${{ vars.AWS_API_CONTAINER_NAME }}
-          image: ${{ needs.build-api.outputs.api_image_uri }}
-      
-      # 6. Deploy the updated Task Definition to the ECS Service
+          task-definition-family: $ECS_API_TASK_DEFINITION_FAMILY_NAME
+          container-name: $ECS_API_CONTAINER_NAME
+          image: $API_IMAGE_TAG
+
       - name: Deploy ECS Task Definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.update-task-def.outputs.task-definition }}
-          cluster: ${{ vars.AWS_ECS_CLUSTER_NAME }}
-          service: ${{ vars.AWS_ECS_SERVICE_NAME }}
+          cluster: $ECS_CLUSTER_NAME
+          service: $ECS_SERVICE_NAME
           wait-for-service-stability: true
 
 
