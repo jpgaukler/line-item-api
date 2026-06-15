@@ -66,7 +66,7 @@ jobs:
             --cluster $ECS_CLUSTER_NAME \
             --task-definition $TASK_DEFINITION_NAME \
             --launch-type FARGATE \
-            --network-configuration "$NETWORK_CONFIG" \
+            --network-configuration '$NETWORK_CONFIG' \
             --query "tasks[0].taskArn" \
             --output text)
           TASK_ID=$(echo $TASK_ARN | awk -F/ '{print $NF}')
@@ -104,6 +104,42 @@ jobs:
           fi
           
           echo "Task finished successfully!"
+          
+            #      - name: Update ECS Task Definition
+            #        id: update-task-def
+            #        uses: aws-actions/amazon-ecs-render-task-definition@v1
+            #        with:
+            #          task-definition-family: $ECS_MIGRATIONS_TASK_DEFINITION_FAMILY_NAME
+            #          container-name: $ECS_MIGRATIONS_CONTAINER_NAME
+            #          image: $MIGRATIONS_IMAGE_TAG
+            #
+            #      - name: Deploy ECS Task Definition
+            #        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+            #        with:
+            #          task-definition: ${{ steps.update-task-def.outputs.task-definition }}
+            #          cluster: $ECS_CLUSTER_NAME
+            #          service: $ECS_SERVICE_NAME
+            #          wait-for-service-stability: true
+            #          run-task: true
+            #          # A comma-separated list of security group IDs to assign to a task when run outside of a service. Will default to none.
+            #          run-task-security-groups: # optional
+            #          # A comma-separated list of subnet IDs to assign to a task when run outside of a service. Will default to none.
+            #          run-task-subnets: # optional
+            #          # Whether the task's elastic network interface receives a public IP address. The default value is DISABLED but will only be applied if run-task-subnets or run-task-security-groups are also set.
+            #          run-task-assign-public-IP: # optional
+            #          # Whether to wait for the task to stop when running it outside of a service. Will default to not wait.
+            #          wait-for-task-stopped: true
+            #          
+            #          #            # A JSON array of container override objects which should applied when running a task outside of a service. Warning: Do not expose this field to untrusted inputs. More details: https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerOverride.html
+            #          #            run-task-container-overrides: # optional
+            #          #            # A JSON array of capacity provider strategy items which should applied when running a task outside of a service. Will default to none.
+            #          #            run-task-capacity-provider-strategy: # optional
+            #          #            # ECS launch type for tasks run outside of a service. Valid values are 'FARGATE' or 'EC2'. Will default to 'FARGATE'. Will only be applied if run-task-capacity-provider-strategy is not set.
+            #          #            run-task-launch-type: # optional
+            #          #            # A name to use for the startedBy tag when running a task outside of a service. Will default to 'GitHub-Actions'.
+            #          #            run-task-started-by: # optional
+            #          #            # A JSON array of tags.
+            #          #            run-task-tags: # optional
   
   build-api:
     runs-on: ubuntu-latest
@@ -155,34 +191,3 @@ jobs:
           cluster: $ECS_CLUSTER_NAME
           service: $ECS_SERVICE_NAME
           wait-for-service-stability: true
-
-
-
-
-
-
-# This might be able to replace all the custom code I wrote for running db migrations
-#      - name: Deploy ECS Task Definition
-#        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-#        with:
-#            # A boolean indicating whether to run a stand-alone task in a ECS cluster. Task will run before the service is updated if both are provided. Default value is false .
-#            run-task: # optional
-#            # A JSON array of container override objects which should applied when running a task outside of a service. Warning: Do not expose this field to untrusted inputs. More details: https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerOverride.html
-#            run-task-container-overrides: # optional
-#            # A comma-separated list of security group IDs to assign to a task when run outside of a service. Will default to none.
-#            run-task-security-groups: # optional
-#            # A comma-separated list of subnet IDs to assign to a task when run outside of a service. Will default to none.
-#            run-task-subnets: # optional
-#            # Whether the task's elastic network interface receives a public IP address. The default value is DISABLED but will only be applied if run-task-subnets or run-task-security-groups are also set.
-#            run-task-assign-public-IP: # optional
-#            # A JSON array of capacity provider strategy items which should applied when running a task outside of a service. Will default to none.
-#            run-task-capacity-provider-strategy: # optional
-#            # ECS launch type for tasks run outside of a service. Valid values are 'FARGATE' or 'EC2'. Will default to 'FARGATE'. Will only be applied if run-task-capacity-provider-strategy is not set.
-#            run-task-launch-type: # optional
-#            # A name to use for the startedBy tag when running a task outside of a service. Will default to 'GitHub-Actions'.
-#            run-task-started-by: # optional
-#            # A JSON array of tags.
-#            run-task-tags: # optional
-#            # Whether to wait for the task to stop when running it outside of a service. Will default to not wait.
-#            wait-for-task-stopped: # optional
-
