@@ -30,9 +30,6 @@ public class Program
             using var scope = services.CreateScope();
             var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
 
-            var options = scope.ServiceProvider.GetRequiredService<IOptions<DatabaseOptions>>();
-            Log.Information("Database connection string: {ConnectionString}", options.Value.ConnectionString);
-
             if (long.TryParse(builder.Configuration["downgradeToRevision"], out var version))
             {
                 Log.Information("Starting database migration downgrade.");

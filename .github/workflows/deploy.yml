@@ -180,14 +180,14 @@ jobs:
         id: update-task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition-family: $ECS_API_TASK_DEFINITION_FAMILY_NAME
-          container-name: $ECS_API_CONTAINER_NAME
-          image: $API_IMAGE_TAG
+          task-definition-family: ${{ env.ECS_API_TASK_DEFINITION_FAMILY_NAME }}
+          container-name: ${{ env.ECS_API_CONTAINER_NAME }}
+          image: ${{ env.API_IMAGE_TAG }}
 
       - name: Deploy ECS Task Definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.update-task-def.outputs.task-definition }}
-          cluster: $ECS_CLUSTER_NAME
-          service: $ECS_SERVICE_NAME
+          cluster: ${{ env.ECS_CLUSTER_NAME }}
+          service: ${{ env.ECS_SERVICE_NAME }}
           wait-for-service-stability: true
