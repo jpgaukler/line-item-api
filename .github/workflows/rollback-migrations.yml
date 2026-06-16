@@ -40,7 +40,7 @@ jobs:
         id: task-def
         run: |
           TASK_DEF_ARN=$(aws ecs describe-task-definition \
-            --task-definition ${{ env.MIGRATIONS_TASK_DEFINITION_FAMILY }} \
+            --task-definition $TASK_DEFINITION_FAMILY \
             --query 'taskDefinition.taskDefinitionArn' \
             --output text)
           echo "arn=$TASK_DEF_ARN" >> $GITHUB_OUTPUT
