@@ -8,6 +8,23 @@ on:
         required: true
         type: string
 
+env:
+  AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ECS_CLUSTER_NAME: ${{ vars.AWS_ECS_CLUSTER_NAME }}
+  TASK_DEFINITION_FAMILY: ${{ vars.AWS_MIGRATIONS_TASK_DEFINITION_FAMILY_NAME }}
+  CONTAINER_NAME: ${{ vars.AWS_MIGRATIONS_CONTAINER_NAME }}
+  SUBNET_IDS: ${{ vars.AWS_RUN_TASK_SUBNET_IDS }}
+  SECURITY_GROUP_ID: ${{ vars.AWS_RUN_TASK_SECURITY_GROUP_ID }}
+  CONTAINER_OVERRIDES: |
+    [
+      {
+        "name": "${{ env.CONTAINER_NAME }}",
+        "command": ["--downgradeToRevision=${{ inputs.downgradeToRevision }}"]
+      }
+    ]
+
 jobs:
   rollback-migrations:
     runs-on: ubuntu-latest
@@ -16,64 +33,77 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v6.1.0
         with:
-          aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ vars.AWS_REGION }}
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Rollback Database Migrations
+      - name: Deploy ECS Task Definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         env:
-          OVERRIDES: |
-            {
-              "containerOverrides": [
-                {
-                  "name": "${{ vars.AWS_MIGRATIONS_CONTAINER_NAME }}",
-                  "command": ["--downgradeToRevision=${{ inputs.downgradeToRevision }}"]
-                }
-              ]
-            }
-        run: |
-          # Start the migration task
-          TASK_ARN=$(aws ecs run-task \
-            --region ${{ vars.AWS_REGION }} \
-            --cluster ${{ vars.AWS_ECS_CLUSTER_NAME }} \
-            --task-definition ${{ vars.AWS_MIGRATIONS_TASK_DEFINITION_NAME }} \
-            --launch-type FARGATE \
-            --network-configuration '${{ vars.AWS_NETWORK_CONFIGURATION }}' \
-            --overrides "$OVERRIDES" \
-            --query "tasks[0].taskArn" \
-            --output text)
-          TASK_ID=$(echo $TASK_ARN | awk -F/ '{print $NF}')
-          echo "Started migrations task: $TASK_ARN"
-          
-          # Wait until the task enters the STOPPED state
-          echo "Waiting for task to finish..."
-          aws ecs wait tasks-stopped \
-            --region ${{ vars.AWS_REGION }} \
-            --cluster ${{ vars.AWS_ECS_CLUSTER_NAME }} \
-            --tasks "$TASK_ARN"
-          
-          # Wait 15 seconds for CloudWatch ingestion to finalize
-          sleep 15
-          
-          # Output logs from the task
-          echo "--- BEGIN MIGRATION LOGS ---"
-          aws logs tail "${{ vars.AWS_MIGRATIONS_LOG_GROUP_NAME }}" \
-            --region ${{ vars.AWS_REGION }} \
-            --log-stream-name-prefix "${{ vars.AWS_MIGRATIONS_LOG_STREAM_PREFIX }}/$TASK_ID" \
-            --format short
-          echo "--- END MIGRATION LOGS ---"
-          
-          # Check if the task failed or was killed
-          EXIT_CODE=$(aws ecs describe-tasks \
-            --region ${{ vars.AWS_REGION }} \
-            --cluster ${{ vars.AWS_ECS_CLUSTER_NAME }} \
-            --tasks "$TASK_ARN" \
-            --query "tasks[0].containers[0].exitCode" \
-            --output text)
-          
-          if [ "$EXIT_CODE" = "None" ] || [ "$EXIT_CODE" -ne 0 ]; then
-            echo "Error: Migration failed or container was stopped prematurely. Exit code: $EXIT_CODE"
-            exit 1
-          fi
-          
-          echo "Task finished successfully!"
+        with:
+          task-definition: ${{ env.TASK_DEFINITION_FAMILY }}
+          cluster: ${{ env.ECS_CLUSTER_NAME }}
+          run-task: true
+          run-task-security-groups: ${{ env.SECURITY_GROUP_ID }}
+          run-task-subnets: ${{ env.SUBNET_IDS }}
+          run-task-assign-public-IP: DISABLED
+          run-task-container-overrides: ${{ env.CONTAINER_OVERRIDES }}
+          wait-for-task-stopped: true
+
+#      - name: Rollback Database Migrations
+#        env:
+#          OVERRIDES: |
+#            {
+#              "containerOverrides": [
+#                {
+#                  "name": "${{ vars.AWS_MIGRATIONS_CONTAINER_NAME }}",
+#                  "command": ["--downgradeToRevision=${{ inputs.downgradeToRevision }}"]
+#                }
+#              ]
+#            }
+#        run: |
+#          # Start the migration task
+#          TASK_ARN=$(aws ecs run-task \
+#            --region ${{ vars.AWS_REGION }} \
+#            --cluster ${{ vars.AWS_ECS_CLUSTER_NAME }} \
+#            --task-definition ${{ vars.AWS_MIGRATIONS_TASK_DEFINITION_NAME }} \
+#            --launch-type FARGATE \
+#            --network-configuration '${{ vars.AWS_NETWORK_CONFIGURATION }}' \
+#            --overrides "$OVERRIDES" \
+#            --query "tasks[0].taskArn" \
+#            --output text)
+#          TASK_ID=$(echo $TASK_ARN | awk -F/ '{print $NF}')
+#          echo "Started migrations task: $TASK_ARN"
+#          
+#          # Wait until the task enters the STOPPED state
+#          echo "Waiting for task to finish..."
+#          aws ecs wait tasks-stopped \
+#            --region ${{ vars.AWS_REGION }} \
+#            --cluster ${{ vars.AWS_ECS_CLUSTER_NAME }} \
+#            --tasks "$TASK_ARN"
+#          
+#          # Wait 15 seconds for CloudWatch ingestion to finalize
+#          sleep 15
+#          
+#          # Output logs from the task
+#          echo "--- BEGIN MIGRATION LOGS ---"
+#          aws logs tail "${{ vars.AWS_MIGRATIONS_LOG_GROUP_NAME }}" \
+#            --region ${{ vars.AWS_REGION }} \
+#            --log-stream-name-prefix "${{ vars.AWS_MIGRATIONS_LOG_STREAM_PREFIX }}/$TASK_ID" \
+#            --format short
+#          echo "--- END MIGRATION LOGS ---"
+#          
+#          # Check if the task failed or was killed
+#          EXIT_CODE=$(aws ecs describe-tasks \
+#            --region ${{ vars.AWS_REGION }} \
+#            --cluster ${{ vars.AWS_ECS_CLUSTER_NAME }} \
+#            --tasks "$TASK_ARN" \
+#            --query "tasks[0].containers[0].exitCode" \
+#            --output text)
+#          
+#          if [ "$EXIT_CODE" = "None" ] || [ "$EXIT_CODE" -ne 0 ]; then
+#            echo "Error: Migration failed or container was stopped prematurely. Exit code: $EXIT_CODE"
+#            exit 1
+#          fi
+#          
+#          echo "Task finished successfully!"
