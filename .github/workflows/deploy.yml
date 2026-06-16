@@ -10,12 +10,18 @@ env:
   AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_REGION: ${{ vars.AWS_REGION }}
-  MIGRATIONS_IMAGE_TAG: "${{ vars.AWS_ECR_MIGRATIONS_REPO_URL }}:${{ github.sha }}"
-  API_IMAGE_TAG: "${{ vars.AWS_ECR_API_REPO_URL }}:${{ github.sha }}"
+  
   ECS_CLUSTER_NAME: ${{ vars.AWS_ECS_CLUSTER_NAME }}
-  ECS_SERVICE_NAME: ${{ vars.AWS_ECS_SERVICE_NAME }}
-  ECS_API_CONTAINER_NAME: ${{ vars.AWS_API_CONTAINER_NAME }}
-  ECS_API_TASK_DEFINITION_FAMILY_NAME: ${{ vars.AWS_API_TASK_DEFINITION_FAMILY_NAME }}
+  
+  API_IMAGE_TAG: "${{ vars.AWS_ECR_API_REPO_URL }}:${{ github.sha }}"
+  API_SERVICE_NAME: ${{ vars.AWS_ECS_SERVICE_NAME }}
+  API_CONTAINER_NAME: ${{ vars.AWS_API_CONTAINER_NAME }}
+  API_TASK_DEFINITION_FAMILY: ${{ vars.AWS_API_TASK_DEFINITION_FAMILY_NAME }}
+  
+  MIGRATIONS_IMAGE_TAG: "${{ vars.AWS_ECR_MIGRATIONS_REPO_URL }}:${{ github.sha }}"
+  MIGRATIONS_TASK_DEFINITION_FAMILY: ${{ vars.AWS_MIGRATIONS_TASK_DEFINITION_FAMILY_NAME }}
+  RUN_TASK_SUBNET_IDS: ${{ vars.AWS_RUN_TASK_SUBNET_IDS }}
+  RUN_TASK_SECURITY_GROUP_ID: ${{ vars.AWS_RUN_TASK_SECURITY_GROUP_ID }}
 
 jobs:
   build-migrations:
@@ -53,93 +59,80 @@ jobs:
           aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Run Database Migrations
-        env:
-          TASK_DEFINITION_NAME: ${{ vars.AWS_MIGRATIONS_TASK_DEFINITION_NAME }}
-          NETWORK_CONFIG: ${{ vars.AWS_NETWORK_CONFIGURATION }}
-          LOG_GROUP_NAME: ${{ vars.AWS_MIGRATIONS_LOG_GROUP_NAME }}
-          LOG_STREAM_PREFIX: ${{ vars.AWS_MIGRATIONS_LOG_STREAM_PREFIX }}
-        run: |
-          # Start the migration task
-          TASK_ARN=$(aws ecs run-task \
-            --region $AWS_REGION \
-            --cluster $ECS_CLUSTER_NAME \
-            --task-definition $TASK_DEFINITION_NAME \
-            --launch-type FARGATE \
-            --network-configuration "$NETWORK_CONFIG" \
-            --query "tasks[0].taskArn" \
-            --output text)
-          TASK_ID=$(echo $TASK_ARN | awk -F/ '{print $NF}')
-          echo "Started migrations task: $TASK_ARN"
+      - name: Update ECS Task Definition
+        id: update-task
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition-family: ${{ env.MIGRATIONS_TASK_DEFINITION_FAMILY }}
+          container-name: ${{ env.MIGRATIONS_CONTAINER_NAME }}
+          image: ${{ env.MIGRATIONS_IMAGE_TAG }}
+
+      - name: Deploy ECS Task Definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.update-task.outputs.task-definition }}
+          cluster: ${{ env.ECS_CLUSTER_NAME }}
+          run-task: true
+          run-task-security-groups: ${{ env.RUN_TASK_SECURITY_GROUP_ID }}
+          run-task-subnets: ${{ env.RUN_TASK_SUBNET_IDS }}
+          run-task-assign-public-IP: DISABLED
+          wait-for-task-stopped: true
           
-          # Wait until the task enters the STOPPED state
-          echo "Waiting for task to finish..."
-          aws ecs wait tasks-stopped \
-            --region $AWS_REGION \
-            --cluster $ECS_CLUSTER_NAME \
-            --tasks "$TASK_ARN"
+          #  # A JSON array of container override objects which should applied when running a task outside of a service. Warning: Do not expose this field to untrusted inputs. More details: https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerOverride.html
+          #  run-task-container-overrides: # optional
           
-          # Wait 15 seconds for CloudWatch ingestion to finalize
-          sleep 15
-          
-          # Output logs from the task
-          echo "--- BEGIN MIGRATION LOGS ---"
-          aws logs tail "$LOG_GROUP_NAME" \
-            --region $AWS_REGION \
-            --log-stream-name-prefix "$LOG_STREAM_PREFIX/$TASK_ID" \
-            --format short
-          echo "--- END MIGRATION LOGS ---"
-          
-          # Check if the task failed or was killed
-          EXIT_CODE=$(aws ecs describe-tasks \
-            --region $AWS_REGION \
-            --cluster $ECS_CLUSTER_NAME \
-            --tasks "$TASK_ARN" \
-            --query "tasks[0].containers[0].exitCode" \
-            --output text)
-          
-          if [ "$EXIT_CODE" = "None" ] || [ "$EXIT_CODE" -ne 0 ]; then
-            echo "Error: Migration failed or container was stopped prematurely. Exit code: $EXIT_CODE"
-            exit 1
-          fi
-          
-          echo "Task finished successfully!"
-          
-            #      - name: Update ECS Task Definition
-            #        id: update-task-def
-            #        uses: aws-actions/amazon-ecs-render-task-definition@v1
-            #        with:
-            #          task-definition-family: $ECS_MIGRATIONS_TASK_DEFINITION_FAMILY_NAME
-            #          container-name: $ECS_MIGRATIONS_CONTAINER_NAME
-            #          image: $MIGRATIONS_IMAGE_TAG
-            #
-            #      - name: Deploy ECS Task Definition
-            #        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-            #        with:
-            #          task-definition: ${{ steps.update-task-def.outputs.task-definition }}
-            #          cluster: $ECS_CLUSTER_NAME
-            #          service: $ECS_SERVICE_NAME
-            #          wait-for-service-stability: true
-            #          run-task: true
-            #          # A comma-separated list of security group IDs to assign to a task when run outside of a service. Will default to none.
-            #          run-task-security-groups: # optional
-            #          # A comma-separated list of subnet IDs to assign to a task when run outside of a service. Will default to none.
-            #          run-task-subnets: # optional
-            #          # Whether the task's elastic network interface receives a public IP address. The default value is DISABLED but will only be applied if run-task-subnets or run-task-security-groups are also set.
-            #          run-task-assign-public-IP: # optional
-            #          # Whether to wait for the task to stop when running it outside of a service. Will default to not wait.
-            #          wait-for-task-stopped: true
-            #          
-            #          #            # A JSON array of container override objects which should applied when running a task outside of a service. Warning: Do not expose this field to untrusted inputs. More details: https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerOverride.html
-            #          #            run-task-container-overrides: # optional
-            #          #            # A JSON array of capacity provider strategy items which should applied when running a task outside of a service. Will default to none.
-            #          #            run-task-capacity-provider-strategy: # optional
-            #          #            # ECS launch type for tasks run outside of a service. Valid values are 'FARGATE' or 'EC2'. Will default to 'FARGATE'. Will only be applied if run-task-capacity-provider-strategy is not set.
-            #          #            run-task-launch-type: # optional
-            #          #            # A name to use for the startedBy tag when running a task outside of a service. Will default to 'GitHub-Actions'.
-            #          #            run-task-started-by: # optional
-            #          #            # A JSON array of tags.
-            #          #            run-task-tags: # optional
+          #      - name: Run Database Migrations
+          #        env:
+          #          TASK_DEFINITION_NAME: ${{ vars.AWS_MIGRATIONS_TASK_DEFINITION_NAME }}
+          #          NETWORK_CONFIG: ${{ vars.AWS_NETWORK_CONFIGURATION }}
+          #          LOG_GROUP_NAME: ${{ vars.AWS_MIGRATIONS_LOG_GROUP_NAME }}
+          #          LOG_STREAM_PREFIX: ${{ vars.AWS_MIGRATIONS_LOG_STREAM_PREFIX }}
+          #        run: |
+          #          # Start the migration task
+          #          TASK_ARN=$(aws ecs run-task \
+          #            --region $AWS_REGION \
+          #            --cluster $ECS_CLUSTER_NAME \
+          #            --task-definition $TASK_DEFINITION_NAME \
+          #            --launch-type FARGATE \
+          #            --network-configuration "$NETWORK_CONFIG" \
+          #            --query "tasks[0].taskArn" \
+          #            --output text)
+          #          TASK_ID=$(echo $TASK_ARN | awk -F/ '{print $NF}')
+          #          echo "Started migrations task: $TASK_ARN"
+          #          
+          #          # Wait until the task enters the STOPPED state
+          #          echo "Waiting for task to finish..."
+          #          aws ecs wait tasks-stopped \
+          #            --region $AWS_REGION \
+          #            --cluster $ECS_CLUSTER_NAME \
+          #            --tasks "$TASK_ARN"
+          #          
+          #          # Wait 15 seconds for CloudWatch ingestion to finalize
+          #          sleep 15
+          #          
+          #          # Output logs from the task
+          #          echo "--- BEGIN MIGRATION LOGS ---"
+          #          aws logs tail "$LOG_GROUP_NAME" \
+          #            --region $AWS_REGION \
+          #            --log-stream-name-prefix "$LOG_STREAM_PREFIX/$TASK_ID" \
+          #            --format short
+          #          echo "--- END MIGRATION LOGS ---"
+          #          
+          #          # Check if the task failed or was killed
+          #          EXIT_CODE=$(aws ecs describe-tasks \
+          #            --region $AWS_REGION \
+          #            --cluster $ECS_CLUSTER_NAME \
+          #            --tasks "$TASK_ARN" \
+          #            --query "tasks[0].containers[0].exitCode" \
+          #            --output text)
+          #          
+          #          if [ "$EXIT_CODE" = "None" ] || [ "$EXIT_CODE" -ne 0 ]; then
+          #            echo "Error: Migration failed or container was stopped prematurely. Exit code: $EXIT_CODE"
+          #            exit 1
+          #          fi
+          #          
+          #          echo "Task finished successfully!"
+  
   
   build-api:
     runs-on: ubuntu-latest
@@ -177,17 +170,17 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Update ECS Task Definition
-        id: update-task-def
+        id: update-task
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition-family: ${{ env.ECS_API_TASK_DEFINITION_FAMILY_NAME }}
-          container-name: ${{ env.ECS_API_CONTAINER_NAME }}
+          task-definition-family: ${{ env.API_TASK_DEFINITION_FAMILY }}
+          container-name: ${{ env.API_CONTAINER_NAME }}
           image: ${{ env.API_IMAGE_TAG }}
 
       - name: Deploy ECS Task Definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
-          task-definition: ${{ steps.update-task-def.outputs.task-definition }}
+          task-definition: ${{ steps.update-task.outputs.task-definition }}
           cluster: ${{ env.ECS_CLUSTER_NAME }}
-          service: ${{ env.ECS_SERVICE_NAME }}
+          service: ${{ env.API_SERVICE_NAME }}
           wait-for-service-stability: true
