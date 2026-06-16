@@ -45,6 +45,7 @@ jobs:
             --task-definition $TASK_DEFINITION_FAMILY \
             --query 'taskDefinition.taskDefinitionArn' \
             --output text)
+          echo "Using task definition: $TASK_DEF_ARN"
           
           # Start the migration rollback task
           TASK_ARN=$(aws ecs run-task \
