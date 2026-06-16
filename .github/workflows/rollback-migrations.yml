@@ -14,13 +14,12 @@ env:
   AWS_REGION: ${{ vars.AWS_REGION }}
   ECS_CLUSTER_NAME: ${{ vars.AWS_ECS_CLUSTER_NAME }}
   TASK_DEFINITION_FAMILY: ${{ vars.AWS_MIGRATIONS_TASK_DEFINITION_FAMILY_NAME }}
-  CONTAINER_NAME: ${{ vars.AWS_MIGRATIONS_CONTAINER_NAME }}
   SUBNET_IDS: ${{ vars.AWS_RUN_TASK_SUBNET_IDS }}
   SECURITY_GROUP_ID: ${{ vars.AWS_RUN_TASK_SECURITY_GROUP_ID }}
   CONTAINER_OVERRIDES: |
     [
       {
-        "name": "${{ env.CONTAINER_NAME }}",
+        "name": "${{ vars.AWS_MIGRATIONS_CONTAINER_NAME }}",
         "command": ["--downgradeToRevision=${{ inputs.downgradeToRevision }}"]
       }
     ]
