@@ -36,10 +36,19 @@ jobs:
           aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Get Latest Task Definition
+        id: task-def
+        run: |
+          TASK_DEF_ARN=$(aws ecs describe-task-definition \
+            --task-definition ${{ env.MIGRATIONS_TASK_DEFINITION_FAMILY }} \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+          echo "arn=$TASK_DEF_ARN" >> $GITHUB_OUTPUT
+
       - name: Deploy ECS Task Definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
-          task-definition: ${{ env.TASK_DEFINITION_FAMILY }}
+          task-definition: ${{ steps.task-def.outputs.arn }}
           cluster: ${{ env.ECS_CLUSTER_NAME }}
           run-task: true
           run-task-security-groups: ${{ env.SECURITY_GROUP_ID }}
