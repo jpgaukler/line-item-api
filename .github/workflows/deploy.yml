@@ -10,6 +10,8 @@ env:
   AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_REGION: ${{ vars.AWS_REGION }}
+  API_IMAGE_TAG: "${{ vars.AWS_ECR_API_REPO_URL }}:${{ github.sha }}"
+  MIGRATIONS_IMAGE_TAG: "${{ vars.AWS_ECR_MIGRATIONS_REPO_URL }}:${{ github.sha }}"
 
 jobs:
   build-migrations:
@@ -44,7 +46,6 @@ jobs:
       ECS_CLUSTER_NAME: ${{ vars.AWS_ECS_CLUSTER_NAME }}
       MIGRATIONS_TASK_DEFINITION_FAMILY: ${{ vars.AWS_MIGRATIONS_TASK_DEFINITION_FAMILY_NAME }}
       MIGRATIONS_CONTAINER_NAME: ${{ vars.AWS_MIGRATIONS_CONTAINER_NAME }}
-      MIGRATIONS_IMAGE_TAG: "${{ vars.AWS_ECR_MIGRATIONS_REPO_URL }}:${{ github.sha }}"
       RUN_TASK_SUBNET_IDS: ${{ vars.AWS_RUN_TASK_SUBNET_IDS }}
       RUN_TASK_SECURITY_GROUP_ID: ${{ vars.AWS_RUN_TASK_SECURITY_GROUP_ID }}
     steps:
@@ -104,7 +105,6 @@ jobs:
     environment: dev
     env:
       ECS_CLUSTER_NAME: ${{ vars.AWS_ECS_CLUSTER_NAME }}
-      API_IMAGE_TAG: "${{ vars.AWS_ECR_API_REPO_URL }}:${{ github.sha }}"
       API_SERVICE_NAME: ${{ vars.AWS_ECS_SERVICE_NAME }}
       API_CONTAINER_NAME: ${{ vars.AWS_API_CONTAINER_NAME }}
       API_TASK_DEFINITION_FAMILY: ${{ vars.AWS_API_TASK_DEFINITION_FAMILY_NAME }}
