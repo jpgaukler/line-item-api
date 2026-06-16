@@ -14,10 +14,10 @@ env:
   AWS_REGION: ${{ vars.AWS_REGION }}
   ECS_CLUSTER_NAME: ${{ vars.AWS_ECS_CLUSTER_NAME }}
   TASK_DEFINITION_FAMILY: ${{ vars.AWS_MIGRATIONS_TASK_DEFINITION_FAMILY_NAME }}
-  NETWORK-CONFIGURATION: ${{ vars.AWS_NETWORK_CONFIGURATION }}
+  NETWORK_CONFIGURATION: ${{ vars.AWS_NETWORK_CONFIGURATION }}
   LOG_GROUP_NAME: ${{ vars.AWS_MIGRATIONS_LOG_GROUP_NAME }}
   LOG_STREAM_PREFIX: ${{ vars.AWS_MIGRATIONS_LOG_STREAM_PREFIX }}
-  OVERRIDES: |
+  CONTAINER_OVERRIDES: |
     {
       "containerOverrides": [
         {
@@ -53,7 +53,7 @@ jobs:
             --task-definition $TASK_DEF_ARN \
             --launch-type FARGATE \
             --network-configuration "$NETWORK_CONFIGURATION" \
-            --overrides "$OVERRIDES" \
+            --overrides "$CONTAINER_OVERRIDES" \
             --query "tasks[0].taskArn" \
             --output text)
           TASK_ID=$(echo $TASK_ARN | awk -F/ '{print $NF}')
