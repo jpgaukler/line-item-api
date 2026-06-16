@@ -39,7 +39,6 @@ jobs:
 
       - name: Deploy ECS Task Definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        env:
         with:
           task-definition: ${{ env.TASK_DEFINITION_FAMILY }}
           cluster: ${{ env.ECS_CLUSTER_NAME }}
