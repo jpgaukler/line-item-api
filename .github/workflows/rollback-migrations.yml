@@ -30,7 +30,6 @@ env:
 jobs:
   rollback-migrations:
     runs-on: ubuntu-latest
-    
     steps:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v6.1.0
@@ -40,7 +39,6 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Rollback Database Migrations
-        env:
         run: |
           # Get the latest task definition ARN
           TASK_DEF_ARN=$(aws ecs describe-task-definition \
@@ -48,7 +46,7 @@ jobs:
             --query 'taskDefinition.taskDefinitionArn' \
             --output text)
           
-          # Start the migration task
+          # Start the migration rollback task
           TASK_ARN=$(aws ecs run-task \
             --region $AWS_REGION \
             --cluster $ECS_CLUSTER_NAME \
