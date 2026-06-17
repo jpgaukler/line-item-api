@@ -1,4 +1,4 @@
-name: Deploy API Job
+name: Shared Job - Deploy API
 
 on:
   workflow_call:

@@ -1,4 +1,4 @@
-name: Migrate Database Job
+name: Shared Job - Migrate Database
 
 on:
   workflow_call:
