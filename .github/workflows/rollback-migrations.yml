@@ -3,7 +3,7 @@ name: Rollback Database Migrations
 on:
   workflow_dispatch:
     inputs:
-      target_environment:
+      target-environment:
         description: 'Target environment'
         required: true
         type: choice
@@ -11,7 +11,7 @@ on:
           - dev
           - uat
           - prod
-      downgrade_to_revision:
+      downgrade-to-revision:
         description: 'The migration revision number to downgrade to (e.g., 0)'
         required: true
         type: string
@@ -19,7 +19,7 @@ on:
 jobs:
   rollback-migrations:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.target_environment }}
+    environment: ${{ inputs.target-environment }}
     steps:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v6.1.0
@@ -41,7 +41,7 @@ jobs:
               "containerOverrides": [
                 {
                   "name": "${{ vars.AWS_MIGRATIONS_CONTAINER_NAME }}",
-                  "command": ["--downgradeToRevision=${{ inputs.downgrade_to_revision }}"]
+                  "command": ["--downgradeToRevision=${{ inputs.downgrade-to-revision }}"]
                 }
               ]
             }
