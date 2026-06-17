@@ -13,7 +13,7 @@ on:
         required: true
 
 jobs:
-  deploy-api:
+  deploy-api-shared-job:
     runs-on: ubuntu-latest
     environment: ${{ inputs.target-environment }}
     steps:

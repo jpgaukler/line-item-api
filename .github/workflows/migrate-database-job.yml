@@ -13,7 +13,7 @@ on:
         required: true
 
 jobs:
-  migrate-database:
+  migrate-database-shared-job:
     runs-on: ubuntu-latest
     environment: ${{ inputs.target-environment }}
     steps:
