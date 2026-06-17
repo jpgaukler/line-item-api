@@ -34,6 +34,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Github Actions", "Github Ac
 		.github\workflows\deploy.yml = .github\workflows\deploy.yml
 		.github\workflows\rollback-migrations.yml = .github\workflows\rollback-migrations.yml
 		.github\workflows\promote.yml = .github\workflows\promote.yml
+		.github\workflows\deploy-api-job.yml = .github\workflows\deploy-api-job.yml
+		.github\workflows\migrate-database-job.yml = .github\workflows\migrate-database-job.yml
 	EndProjectSection
 EndProject
 Global

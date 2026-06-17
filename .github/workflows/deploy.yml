@@ -1,4 +1,4 @@
-name: Deploy API to Dev
+name: Deploy to Dev
 
 on:
   workflow_dispatch:
@@ -35,37 +35,6 @@ jobs:
             --tag $MIGRATIONS_IMAGE_TAG \
             --push .
 
-  migrate-database:
-    runs-on: ubuntu-latest
-    needs: build-migrations
-    environment: dev
-    steps:
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6.1.0
-        with:
-          aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ vars.AWS_REGION }}
-
-      - name: Update ECS Task Definition
-        id: update-task
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition-family: ${{ vars.AWS_MIGRATIONS_TASK_DEFINITION_FAMILY_NAME }}
-          container-name: ${{ vars.AWS_MIGRATIONS_CONTAINER_NAME }}
-          image: ${{ env.MIGRATIONS_IMAGE_TAG }}
-
-      - name: Deploy ECS Task Definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ steps.update-task.outputs.task-definition }}
-          cluster: ${{ vars.AWS_ECS_CLUSTER_NAME }}
-          run-task: true
-          run-task-security-groups: ${{ vars.AWS_RUN_TASK_SECURITY_GROUP_ID }}
-          run-task-subnets: ${{ vars.AWS_RUN_TASK_SUBNET_IDS }}
-          run-task-assign-public-IP: DISABLED
-          wait-for-task-stopped: true
-  
   build-api:
     runs-on: ubuntu-latest
     steps:
@@ -90,30 +59,18 @@ jobs:
             --tag $API_IMAGE_TAG \
             --push .
   
+  migrate-database:
+    needs: build-migrations
+    uses: ./.github/workflows/migrate-database-job.yml
+    with:
+      environment: dev
+      image-tag: ${{ env.MIGRATIONS_IMAGE_TAG }}
+    secrets: inherit
+  
   deploy-api:
-    runs-on: ubuntu-latest
     needs: [ build-api, migrate-database ]
-    environment: dev
-    steps:
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6.1.0
-        with:
-          aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ vars.AWS_REGION }}
-
-      - name: Update ECS Task Definition
-        id: update-task
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition-family: ${{ vars.AWS_API_TASK_DEFINITION_FAMILY_NAME }}
-          container-name: ${{ vars.AWS_API_CONTAINER_NAME }}
-          image: ${{ env.API_IMAGE_TAG }}
-
-      - name: Deploy ECS Task Definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ steps.update-task.outputs.task-definition }}
-          cluster: ${{ vars.AWS_ECS_CLUSTER_NAME }}
-          service: ${{ vars.AWS_ECS_SERVICE_NAME }}
-          wait-for-service-stability: true
+    uses: ./.github/workflows/deploy-api-job.yml
+    with:
+      environment: dev
+      api-image-tag: ${{ env.API_IMAGE_TAG }}
+    secrets: inherit

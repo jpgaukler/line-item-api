@@ -1,0 +1,41 @@
+name: Deploy API Job
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'The target environment (e.g., dev, staging, prod)'
+        type: string
+        required: true
+      image_tag:
+        description: 'The Docker image tag for the API to deploy'
+        type: string
+        required: true
+
+jobs:
+  deploy-api:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6.1.0
+        with:
+          aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Update ECS Task Definition
+        id: update-task
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition-family: ${{ vars.AWS_API_TASK_DEFINITION_FAMILY_NAME }}
+          container-name: ${{ vars.AWS_API_CONTAINER_NAME }}
+          image: ${{ inputs.image_tag }}
+
+      - name: Deploy ECS Task Definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.update-task.outputs.task-definition }}
+          cluster: ${{ vars.AWS_ECS_CLUSTER_NAME }}
+          service: ${{ vars.AWS_ECS_SERVICE_NAME }}
+          wait-for-service-stability: true

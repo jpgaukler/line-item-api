@@ -1,80 +1,37 @@
-name: Promote API
+name: Promote
 
 on:
   workflow_dispatch:
     inputs:
-      TARGET_ENVIRONMENT:
-        description: 'Target environment for promotion'
+      target_environment:
+        description: 'Target environment'
         required: true
         type: choice
         options:
           - dev
           - uat
           - prod
-      IMAGE_TAG:
-        description: 'The tag of the image to promote'
+      image_tag:
+        description: 'Image tag'
         required: true
         type: string
 
 env:
-  API_IMAGE_TAG: "${{ vars.AWS_ECR_API_REPO_URL }}:${{ inputs.IMAGE_TAG }}"
-  MIGRATIONS_IMAGE_TAG: "${{ vars.AWS_ECR_MIGRATIONS_REPO_URL }}:${{ inputs.IMAGE_TAG }}"
+  API_IMAGE_TAG: "${{ vars.AWS_ECR_API_REPO_URL }}:${{ inputs.image_tag }}"
+  MIGRATIONS_IMAGE_TAG: "${{ vars.AWS_ECR_MIGRATIONS_REPO_URL }}:${{ inputs.image_tag }}"
 
 jobs:
   migrate-database:
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.TARGET_ENVIRONMENT }}
-    steps:
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6.1.0
-        with:
-          aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ vars.AWS_REGION }}
-
-      - name: Update ECS Task Definition
-        id: update-task
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition-family: ${{ vars.AWS_MIGRATIONS_TASK_DEFINITION_FAMILY_NAME }}
-          container-name: ${{ vars.AWS_MIGRATIONS_CONTAINER_NAME }}
-          image: ${{ env.MIGRATIONS_IMAGE_TAG }}
-
-      - name: Deploy ECS Task Definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ steps.update-task.outputs.task-definition }}
-          cluster: ${{ vars.AWS_ECS_CLUSTER_NAME }}
-          run-task: true
-          run-task-security-groups: ${{ vars.AWS_RUN_TASK_SECURITY_GROUP_ID }}
-          run-task-subnets: ${{ vars.AWS_RUN_TASK_SUBNET_IDS }}
-          run-task-assign-public-IP: DISABLED
-          wait-for-task-stopped: true
+    uses: ./.github/workflows/migrate-database-job.yml
+    with:
+      environment: ${{ inputs.target_environment }}
+      image-tag: ${{ env.MIGRATIONS_IMAGE_TAG }}
+    secrets: inherit
   
   deploy-api:
-    runs-on: ubuntu-latest
     needs: migrate-database
-    environment: ${{ inputs.TARGET_ENVIRONMENT }}
-    steps:
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6.1.0
-        with:
-          aws-access-key-id: ${{ vars.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ vars.AWS_REGION }}
-
-      - name: Update ECS Task Definition
-        id: update-task
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition-family: ${{ vars.AWS_API_TASK_DEFINITION_FAMILY_NAME }}
-          container-name: ${{ vars.AWS_API_CONTAINER_NAME }}
-          image: ${{ env.API_IMAGE_TAG }}
-
-      - name: Deploy ECS Task Definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ steps.update-task.outputs.task-definition }}
-          cluster: ${{ vars.AWS_ECS_CLUSTER_NAME }}
-          service: ${{ vars.AWS_ECS_SERVICE_NAME }}
-          wait-for-service-stability: true
+    uses: ./.github/workflows/deploy-api-job.yml
+    with:
+      environment: ${{ inputs.target_environment }}
+      api-image-tag: ${{ env.API_IMAGE_TAG }}
+    secrets: inherit
