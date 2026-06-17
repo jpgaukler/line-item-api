@@ -12,12 +12,18 @@ on:
           - uat
           - prod
       downgrade-to-revision:
-        description: 'The migration revision number to downgrade to (e.g., 0)'
-        required: true
+        description: 'The migration revision number for database downgrade. Leave blank to skip database rollback.'
+        required: false
         type: string
+      image-tag:
+        description: 'The image tag to use for API rollback. Leave blank to skip API rollback.'
+        required: false
+        type: string
+
 
 jobs:
   rollback-migrations:
+    if: ${{ inputs.downgrade-to-revision != '' }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.target-environment }}
     steps:
@@ -98,3 +104,15 @@ jobs:
           fi
 
           echo "Task finished successfully!"
+  
+  rollback-api:
+    if: |
+      always() && 
+      inputs.image-tag != '' && 
+      (needs.rollback-migrations.result == 'success' || needs.rollback-migrations.result == 'skipped')
+    needs: rollback-migrations
+    uses: ./.github/workflows/deploy-api-job.yml
+    with:
+      target-environment: ${{ inputs.target-environment }}
+      image-tag: "${{ vars.AWS_ECR_API_REPO_URL }}:${{ inputs.image-tag }}"
+    secrets: inherit
