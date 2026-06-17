@@ -3,11 +3,11 @@ name: Migrate Database Job
 on:
   workflow_call:
     inputs:
-      environment:
+      target-environment:
         description: 'The target environment (e.g., dev, staging, prod)'
         type: string
         required: true
-      image_tag:
+      image-tag:
         description: 'The Docker image tag to deploy'
         type: string
         required: true
@@ -15,7 +15,7 @@ on:
 jobs:
   migrate-database:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
+    environment: ${{ inputs.target-environment }}
     steps:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v6.1.0
@@ -30,7 +30,7 @@ jobs:
         with:
           task-definition-family: ${{ vars.AWS_MIGRATIONS_TASK_DEFINITION_FAMILY_NAME }}
           container-name: ${{ vars.AWS_MIGRATIONS_CONTAINER_NAME }}
-          image: ${{ inputs.image_tag }}
+          image: ${{ inputs.image-tag }}
 
       - name: Deploy ECS Task Definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2

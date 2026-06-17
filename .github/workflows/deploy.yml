@@ -63,7 +63,7 @@ jobs:
     needs: build-migrations
     uses: ./.github/workflows/migrate-database-job.yml
     with:
-      environment: dev
+      target-environment: dev
       image-tag: ${{ env.MIGRATIONS_IMAGE_TAG }}
     secrets: inherit
   
@@ -71,6 +71,6 @@ jobs:
     needs: [ build-api, migrate-database ]
     uses: ./.github/workflows/deploy-api-job.yml
     with:
-      environment: dev
-      api-image-tag: ${{ env.API_IMAGE_TAG }}
+      target-environment: dev
+      image-tag: ${{ env.API_IMAGE_TAG }}
     secrets: inherit
