@@ -33,6 +33,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Github Actions", "Github Ac
 	ProjectSection(SolutionItems) = preProject
 		.github\workflows\deploy.yml = .github\workflows\deploy.yml
 		.github\workflows\rollback-migrations.yml = .github\workflows\rollback-migrations.yml
+		.github\workflows\promote.yml = .github\workflows\promote.yml
 	EndProjectSection
 EndProject
 Global
