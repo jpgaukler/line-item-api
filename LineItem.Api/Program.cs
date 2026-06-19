@@ -71,7 +71,7 @@ public static class Program
 
             // Output formatting
             var environment = serviceProvider.GetRequiredService<IHostEnvironment>();
-            if (environment.IsDevelopment())
+            if (environment.IsEnvironment("local"))
                 loggerConfig.WriteTo.Console();
             else
                 loggerConfig.WriteTo.Console(new CompactJsonFormatter());
@@ -142,8 +142,11 @@ public static class Program
     private static void ConfigureApplication(WebApplication application)
     {
         // configure the HTTP request pipeline.
-        if (application.Environment.IsDevelopment())
+        if (application.Environment.IsEnvironment("local"))
+        {
             application.UseDeveloperExceptionPage();
+            application.UseHttpsRedirection();
+        }
 
         // learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         application.UseSwagger();
@@ -153,7 +156,6 @@ public static class Program
         application.UseExceptionHandler("/error");
 
         // configure middleware
-        application.UseHttpsRedirection();
         application.UseRouting();
         application.UseCors();
         application.UseAuthentication();

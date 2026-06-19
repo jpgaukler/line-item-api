@@ -4,14 +4,14 @@
       "commandName": "Project",
       "commandLineArgs": "",
       "environmentVariables": {
-        "DOTNET_ENVIRONMENT": "Development"
+        "DOTNET_ENVIRONMENT": "local"
       }
     },
     "Migrate Down (to 0)": {
       "commandName": "Project",
       "commandLineArgs": "--downgradeToRevision=0",
       "environmentVariables": {
-        "DOTNET_ENVIRONMENT": "Development"
+        "DOTNET_ENVIRONMENT": "local"
       }
     }
   }

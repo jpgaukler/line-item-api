@@ -63,7 +63,7 @@ public class Program
         services.AddSerilog((serviceProvider, loggerConfig) =>
         {
             var environment = serviceProvider.GetRequiredService<IHostEnvironment>();
-            if (environment.IsDevelopment())
+            if (environment.IsEnvironment("local"))
                 loggerConfig.WriteTo.Console();
             else
                 loggerConfig.WriteTo.Console(new CompactJsonFormatter());
