@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text.Json;
 using Asp.Versioning;
 using Auth0.AspNetCore.Authentication.Api;
+using LineItem.Api.HealthChecks;
 using LineItem.Api.Middleware;
 using LineItem.BuildVersion;
 using LineItem.Repositories;
@@ -133,7 +134,8 @@ public static class Program
         services.AddScoped<IUserService, UserService>();
 
         // Configure health checks
-        services.AddHealthChecks();
+        services.AddHealthChecks()
+            .AddCheck<DatabaseHealthCheck>(nameof(DatabaseHealthCheck));
 
         // add cache for user context
         services.AddMemoryCache();
@@ -178,7 +180,7 @@ public static class Program
                     duration = report.TotalDuration,
                     info = report.Entries.Select(e => new
                     {
-                        key = e.Key,
+                        name = e.Key,
                         status = e.Value.Status.ToString(),
                         description = e.Value.Description,
                         data = e.Value.Data
