@@ -80,17 +80,6 @@ public static class Program
             loggerConfig.ReadFrom.Services(serviceProvider);
         });
 
-        services.AddSerilog((serviceProvider, loggerConfig) =>
-        {
-            var environment = serviceProvider.GetRequiredService<IHostEnvironment>();
-            if (environment.IsDevelopment())
-                loggerConfig.WriteTo.Console();
-            else
-                loggerConfig.WriteTo.Console(new CompactJsonFormatter());
-
-            loggerConfig.ReadFrom.Services(serviceProvider);
-        });
-
         // configure versioning
         services
             .AddApiVersioning(options =>
