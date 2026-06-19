@@ -11,9 +11,7 @@
         <PackageReference Include="FluentMigrator.Runner.Postgres" Version="8.0.1"/>
         <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="9.0.2"/>
         <PackageReference Include="Npgsql" Version="10.0.1"/>
-        <PackageReference Include="Serilog" Version="4.2.0"/>
         <PackageReference Include="Serilog.AspNetCore" Version="9.0.0"/>
-        <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0"/>
     </ItemGroup>
 
     <ItemGroup>

@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Serilog.Formatting.Compact;
 
 namespace LineItem.Migrations;
 
@@ -59,9 +60,20 @@ public class Program
 
     private static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
+        services.AddSerilog((serviceProvider, loggerConfig) =>
+        {
+            var environment = serviceProvider.GetRequiredService<IHostEnvironment>();
+            if (environment.IsDevelopment())
+                loggerConfig.WriteTo.Console();
+            else
+                loggerConfig.WriteTo.Console(new CompactJsonFormatter());
+
+            loggerConfig.ReadFrom.Services(serviceProvider);
+        });
+
+        services.AddDatabaseOptions(configuration);
+
         services
-            .AddDatabaseOptions(configuration)
-            .AddScoped<IVersionTableMetaData, VersionTableMetadata>()
             .AddFluentMigratorCore()
             .ConfigureRunner(runner =>
                 runner
@@ -70,12 +82,10 @@ public class Program
                     .ScanIn(typeof(Program).Assembly)
                     .For.Migrations()
             )
-            .AddLogging(loggingBuilder => loggingBuilder.AddFluentMigratorConsole());
-
-        // PostConfigure forces connection string to resolve from IOptions after the ServiceProvider is built
-        services
+            .AddScoped<IVersionTableMetaData, VersionTableMetadata>()
             .AddOptions<ProcessorOptions>()
             .PostConfigure<IOptions<DatabaseOptions>>((processorOptions, databaseOptions) =>
+                // PostConfigure forces connection string to resolve from IOptions<DatabaseOptions> after the ServiceProvider is built
                 processorOptions.ConnectionString = databaseOptions.Value.ConnectionString
             );
     }

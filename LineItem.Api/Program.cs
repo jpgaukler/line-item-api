@@ -17,6 +17,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using Serilog.Events;
+using Serilog.Formatting.Compact;
 
 namespace LineItem.Api;
 
@@ -54,12 +56,40 @@ public static class Program
 
     private static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
-        // configure logging (two-stage initialization: https://github.com/serilog/serilog-aspnetcore?tab=readme-ov-file#two-stage-initialization
-        services.AddSerilog((serviceProvider, logConfiguration) =>
-            logConfiguration
-                .ReadFrom.Configuration(configuration)
-                .ReadFrom.Services(serviceProvider)
-        );
+        services.AddSerilog((serviceProvider, loggerConfig) =>
+        {
+            // Minimum Levels and Overrides
+            loggerConfig
+                .MinimumLevel.Information()
+                .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning);
+
+            // Enrichers
+            loggerConfig
+                .Enrich.FromLogContext()
+                .Enrich.WithMachineName()
+                .Enrich.WithEnvironmentName();
+
+            // Output formatting
+            var environment = serviceProvider.GetRequiredService<IHostEnvironment>();
+            if (environment.IsDevelopment())
+                loggerConfig.WriteTo.Console();
+            else
+                loggerConfig.WriteTo.Console(new CompactJsonFormatter());
+
+            // Complete two-stage initialization w/ bootstrap logger (see here: https://github.com/serilog/serilog-aspnetcore?tab=readme-ov-file#two-stage-initialization)
+            loggerConfig.ReadFrom.Services(serviceProvider);
+        });
+
+        services.AddSerilog((serviceProvider, loggerConfig) =>
+        {
+            var environment = serviceProvider.GetRequiredService<IHostEnvironment>();
+            if (environment.IsDevelopment())
+                loggerConfig.WriteTo.Console();
+            else
+                loggerConfig.WriteTo.Console(new CompactJsonFormatter());
+
+            loggerConfig.ReadFrom.Services(serviceProvider);
+        });
 
         // configure versioning
         services
