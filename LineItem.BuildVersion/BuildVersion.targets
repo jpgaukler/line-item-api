@@ -1,0 +1,8 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <ItemGroup Condition="'$(BuildVersion)' != ''">
+        <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+            <_Parameter1>BuildVersion</_Parameter1>
+            <_Parameter2>$(BuildVersion)</_Parameter2>
+        </AssemblyAttribute>
+    </ItemGroup>
+</Project>

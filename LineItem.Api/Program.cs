@@ -1,13 +1,17 @@
 using System;
+using System.Linq;
+using System.Text.Json;
 using Asp.Versioning;
 using Auth0.AspNetCore.Authentication.Api;
 using LineItem.Api.Middleware;
+using LineItem.BuildVersion;
 using LineItem.Repositories;
 using LineItem.Repositories.Helpers;
 using LineItem.Repositories.Interfaces;
 using LineItem.Services;
 using LineItem.Services.Interfaces;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,6 +44,7 @@ public static class Program
         catch (Exception ex)
         {
             Log.Fatal(ex, "Application encountered a fatal unhandled exception");
+            Environment.ExitCode = 1;
         }
         finally
         {
@@ -140,7 +145,29 @@ public static class Program
         application.MapControllers();
 
         // configure health checks
-        application.MapHealthChecks("/health");
+        application.MapHealthChecks("/health", new HealthCheckOptions
+        {
+            ResponseWriter = async (context, report) =>
+            {
+                context.Response.ContentType = "application/json";
+
+                var response = JsonSerializer.Serialize(new
+                {
+                    status = report.Status.ToString(),
+                    duration = report.TotalDuration,
+                    info = report.Entries.Select(e => new
+                    {
+                        key = e.Key,
+                        status = e.Value.Status.ToString(),
+                        description = e.Value.Description,
+                        data = e.Value.Data
+                    }),
+                    buildVersion = BuildVersionProvider.GetVersion()
+                }, new JsonSerializerOptions { WriteIndented = true });
+
+                await context.Response.WriteAsync(response);
+            }
+        });
 
         // TESTING ONLY
         // Public endpoint - no authentication required

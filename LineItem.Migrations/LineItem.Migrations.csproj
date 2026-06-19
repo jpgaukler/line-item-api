@@ -17,6 +17,13 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\LineItem.BuildVersion\LineItem.BuildVersion.csproj"/>
+        <ProjectReference Include="..\LineItem.Repositories\LineItem.Repositories.csproj"/>
+    </ItemGroup>
+
+    <Import Project="..\LineItem.BuildVersion\BuildVersion.targets"/>
+
+    <ItemGroup>
         <Content Include="..\LineItem.Api\appsettings*.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <Link>appsettings (linked from LineItem.API)\%(Filename)%(Extension)</Link>
@@ -28,9 +35,5 @@
         <Content Include="Migrations\**\*.sql">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-    </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\LineItem.Repositories\LineItem.Repositories.csproj"/>
     </ItemGroup>
 </Project>

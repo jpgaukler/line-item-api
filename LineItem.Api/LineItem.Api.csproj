@@ -14,8 +14,11 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\LineItem.BuildVersion\LineItem.BuildVersion.csproj"/>
         <ProjectReference Include="..\LineItem.Models\LineItem.Models.csproj"/>
         <ProjectReference Include="..\LineItem.Repositories\LineItem.Repositories.csproj"/>
         <ProjectReference Include="..\LineItem.Services\LineItem.Services.csproj"/>
     </ItemGroup>
+
+    <Import Project="..\LineItem.BuildVersion\BuildVersion.targets"/>
 </Project>

@@ -2,6 +2,7 @@ using System;
 using FluentMigrator.Runner;
 using FluentMigrator.Runner.Processors;
 using FluentMigrator.Runner.VersionTableInfo;
+using LineItem.BuildVersion;
 using LineItem.Migrations.Metadata;
 using LineItem.Repositories.Helpers;
 using LineItem.Repositories.Options;
@@ -17,7 +18,6 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        // bootstrap logger for capturing issues during application startup
         Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
 
         try
@@ -30,11 +30,14 @@ public class Program
             using var scope = services.CreateScope();
             var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
 
+            Log.Information("Running database migrations for BuildVersion: {BuildVersion}",
+                BuildVersionProvider.GetVersion());
+
             if (long.TryParse(builder.Configuration["downgradeToRevision"], out var version))
             {
-                Log.Information("Starting database migration downgrade.");
+                Log.Information("Starting database migration downgrade to version {Version}.", version);
                 runner.MigrateDown(version);
-                Log.Information("Database downgrade to version {Version} completed successfully.", version);
+                Log.Information("Database downgrade to completed successfully.");
             }
             else
             {
@@ -46,7 +49,7 @@ public class Program
         catch (Exception ex)
         {
             Log.Fatal(ex, "Application encountered a fatal unhandled exception");
-            Environment.Exit(1); // Crucial for CLI to report a failure!
+            Environment.ExitCode = 1;
         }
         finally
         {
@@ -69,7 +72,7 @@ public class Program
             )
             .AddLogging(loggingBuilder => loggingBuilder.AddFluentMigratorConsole());
 
-        // force connection string to resolve from IOptions after the ServiceProvider is built
+        // PostConfigure forces connection string to resolve from IOptions after the ServiceProvider is built
         services
             .AddOptions<ProcessorOptions>()
             .PostConfigure<IOptions<DatabaseOptions>>((processorOptions, databaseOptions) =>
