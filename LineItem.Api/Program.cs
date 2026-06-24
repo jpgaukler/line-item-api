@@ -37,7 +37,7 @@ public static class Program
             // configure the service collection
             ConfigureServices(builder.Services, builder.Configuration);
 
-            // configure and run the application
+            // configure the application (middleware, controllers, etc.)
             var application = builder.Build();
             ConfigureApplication(application);
 
