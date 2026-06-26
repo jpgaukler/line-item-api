@@ -15,6 +15,9 @@ public class ProductSchema : Migration
 
     public override void Down()
     {
+        Execute.Script("DROP TABLE lineitem.product_category");
         Execute.Script("DROP TABLE lineitem.product");
+        Execute.Script("DROP TABLE lineitem.product_version");
+        Execute.Script("DROP TABLE lineitem.product_draft");
     }
 }
