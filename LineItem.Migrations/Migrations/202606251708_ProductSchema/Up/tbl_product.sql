@@ -9,10 +9,7 @@ CREATE TABLE lineitem.product
   created_at          TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
   created_by          BIGINT       NOT NULL REFERENCES lineitem.app_user (id),
   updated_at          TIMESTAMPTZ  NULL,
-  updated_by          BIGINT       NULL REFERENCES lineitem.app_user (id),
-
-  FOREIGN KEY (id, active_version)
-    REFERENCES lineitem.product_version (product_id, version)
+  updated_by          BIGINT       NULL REFERENCES lineitem.app_user (id)
 );
 
 CREATE TRIGGER trg_product_updated_at
