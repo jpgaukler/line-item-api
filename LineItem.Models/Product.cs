@@ -1,57 +1,6 @@
-using System;
 using System.Collections.Generic;
 
 namespace LineItem.Models;
-
-/// <summary>
-///     Class representing a row in the 'products' database table. Includes relational columns for querying, along
-///     with JSON snapshot of the entire product definition.
-/// </summary>
-public class ProductVersionRow
-{
-    /// <summary>
-    ///     Database Id.
-    /// </summary>
-    public long Id { get; set; }
-
-    /// <summary>
-    ///     1-indexed version of the product.
-    /// </summary>
-    public int Version { get; set; }
-
-    /// <summary>
-    ///     Name of the product.
-    /// </summary>
-    public string Name { get; set; } = string.Empty;
-
-    public bool IsActive { get; set; }
-    public bool IsArchived { get; set; }
-
-    /// <summary>
-    ///     Immutable JSON snapshot of the entire product definition.
-    /// </summary>
-    public string Snapshot { get; set; } = string.Empty;
-
-    /// <summary>
-    ///     Timestamp of when the database record was created.
-    /// </summary>
-    public DateTime CreatedAt { get; set; }
-
-    /// <summary>
-    ///     Timestamp of when the database record was last updated.
-    /// </summary>
-    public DateTime UpdatedAt { get; set; }
-
-    /// <summary>
-    ///     Id of the user who created the database record.
-    /// </summary>
-    public long CreatedBy { get; set; }
-
-    /// <summary>
-    ///     Id of the user who last updated the database record.
-    /// </summary>
-    public long? UpdatedBy { get; set; }
-}
 
 /// <summary>
 ///     Represents the definition of a product. This serves as a template for adding products to a quote.
@@ -62,6 +11,11 @@ public class Product
     ///     Database Id.
     /// </summary>
     public long Id { get; set; }
+
+    /// <summary>
+    ///     Id of the product category which the product belongs to.
+    /// </summary>
+    public long ProductCategoryId { get; set; }
 
     /// <summary>
     ///     Name of the product.
@@ -188,7 +142,7 @@ public class ProductPriceDictionary
     ///     This hash can be used to determine if the price dictionary is out of date,
     ///     if product inputs have changed since last generating the pricing dictionary.
     /// </summary>
-    public string ProductCodeHash { get; set; }
+    public string ProductCodeHash { get; set; } = string.Empty;
 
     /// <summary>
     ///     A map of product code to base prices.
