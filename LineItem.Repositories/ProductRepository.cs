@@ -188,7 +188,7 @@ public class ProductRepository : DatabaseRepository, IProductRepository
         await connection.OpenAsync(cancellationToken);
 
         var command = new CommandDefinition(
-            "SELECT * FROM lineitem.product_retrieve_by_id(@id);",
+            "SELECT * FROM lineitem.product_retrieve_active_version_by_id(@id);",
             new { id = productId },
             cancellationToken: cancellationToken);
 
@@ -206,7 +206,7 @@ public class ProductRepository : DatabaseRepository, IProductRepository
         await connection.OpenAsync(cancellationToken);
 
         var command = new CommandDefinition(
-            "SELECT * FROM lineitem.product_retrieve_version_by_id(@product_id, @version);",
+            "SELECT * FROM lineitem.product_retrieve_specific_version_by_id(@product_id, @version);",
             new
             {
                 product_id = productId,

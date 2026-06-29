@@ -10,4 +10,4 @@ BEGIN
     FROM lineitem.product_draft
     WHERE id = p_id;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql STABLE;

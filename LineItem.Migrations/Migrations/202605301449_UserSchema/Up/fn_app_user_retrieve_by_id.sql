@@ -5,4 +5,4 @@ BEGIN
   RETURN QUERY
     SELECT * FROM lineitem.app_user WHERE id = p_id;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql STABLE;

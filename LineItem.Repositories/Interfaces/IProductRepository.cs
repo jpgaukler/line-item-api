@@ -74,6 +74,6 @@ public interface IProductRepository
     /// <summary>
     ///     Text search for products across name and description.
     /// </summary>
-    /// <returns>The products matching the search term or empty list if no products are found.</returns>
+    /// <returns>Matching products or empty list if none found.</returns>
     public Task<IEnumerable<Product>> SearchAsync(string searchTerm, CancellationToken cancellationToken);
 }

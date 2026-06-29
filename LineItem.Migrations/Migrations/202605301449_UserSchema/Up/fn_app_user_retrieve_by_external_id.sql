@@ -5,4 +5,4 @@ BEGIN
   RETURN QUERY
     SELECT * FROM lineitem.app_user WHERE external_id = p_external_id;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql STABLE;
