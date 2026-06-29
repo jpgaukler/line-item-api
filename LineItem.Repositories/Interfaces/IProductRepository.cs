@@ -14,14 +14,12 @@ public interface IProductRepository
     /// </summary>
     /// <param name="product"></param>
     /// <param name="productId">Optionally, the id of the base product to use (for product edits).</param>
-    /// <param name="baseVersion">Optionally, the version of the base product to use (for product edits).</param>
     /// <param name="createdBy"></param>
     /// <param name="cancellationToken"></param>
     /// <returns>The created draft.</returns>
     public Task<ProductDraft> CreateDraftAsync(
         Product product,
         long? productId,
-        int? baseVersion,
         long createdBy,
         CancellationToken cancellationToken
     );

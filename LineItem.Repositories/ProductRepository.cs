@@ -30,7 +30,6 @@ public class ProductRepository : DatabaseRepository, IProductRepository
     public async Task<ProductDraft> CreateDraftAsync(
         Product product,
         long? productId,
-        int? baseVersion,
         long createdBy,
         CancellationToken cancellationToken
     )
@@ -39,11 +38,10 @@ public class ProductRepository : DatabaseRepository, IProductRepository
         await connection.OpenAsync(cancellationToken);
 
         var command = new CommandDefinition(
-            "SELECT * FROM lineitem.product_draft_insert(@base_product_id, @base_version, @product_data, @created_by);",
+            "SELECT * FROM lineitem.product_draft_insert(@base_product_id, @product_data, @created_by);",
             new
             {
                 base_product_id = productId,
-                base_version = baseVersion,
                 product_data = Serialize(product),
                 created_by = createdBy
             },
