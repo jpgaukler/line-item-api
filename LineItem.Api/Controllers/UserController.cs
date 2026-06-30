@@ -33,9 +33,9 @@ public class UserController : ControllerBase
                 createdUser
             );
         }
-        catch (BadRequestException ex)
+        catch (ValidationException ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(ex.Errors);
         }
     }
 
@@ -69,9 +69,9 @@ public class UserController : ControllerBase
                 ? Ok(updatedUser)
                 : NotFound($"User with Id = {id} not found!");
         }
-        catch (BadRequestException ex)
+        catch (ValidationException ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(ex.Errors);
         }
     }
 
