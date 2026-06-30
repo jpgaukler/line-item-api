@@ -7,51 +7,6 @@ namespace LineItem.Repositories.Interfaces;
 
 public interface IProductRepository
 {
-    // --- Product Draft workflow ---
-
-    /// <summary>
-    ///     Creates a new draft for a new product.
-    /// </summary>
-    /// <returns>The created draft.</returns>
-    public Task<ProductDraft> CreateDraftAsync(Product product, long createdBy, CancellationToken cancellationToken);
-
-    /// <summary>
-    ///     Creates a draft branched from the active version of an existing published product.
-    /// </summary>
-    /// <returns>The created draft.</returns>
-    public Task<ProductDraft> CreateDraftFromProductAsync(
-        long productId,
-        long createdBy,
-        CancellationToken cancellationToken
-    );
-
-    /// <summary>
-    ///     Overwrites the product_data on an existing draft row.
-    /// </summary>
-    public Task UpdateDraftAsync(long draftId, Product product, long updatedBy, CancellationToken cancellationToken);
-
-    /// <summary>
-    ///     Retrieves a product draft by id.
-    /// </summary>
-    /// <returns>The product draft or null if no draft is found.</returns>
-    public Task<ProductDraft?> RetrieveDraftByIdAsync(long draftId, CancellationToken cancellationToken);
-
-    /// <summary>
-    ///     Publishes a product draft. If the draft has no base_product_id, creates a new product
-    ///     and product_version (v1), otherwise adds a new version, and bumps active_version.
-    ///     Both paths execute in a single transaction.
-    /// </summary>
-    /// <returns>The published product.</returns>
-    public Task<Product> PublishDraftAsync(ProductDraft draft, long createdBy, CancellationToken cancellationToken);
-
-    /// <summary>
-    ///     Deletes a product draft by id.
-    /// </summary>
-    public Task DeleteDraftAsync(long draftId, CancellationToken cancellationToken);
-
-
-    // --- Product queries ---
-
     /// <summary>
     ///     Returns the active version of a product.
     /// </summary>

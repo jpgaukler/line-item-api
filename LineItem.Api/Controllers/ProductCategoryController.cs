@@ -12,10 +12,12 @@ namespace LineItem.Api.Controllers;
 public class ProductCategoryController : ControllerBase
 {
     private readonly IProductCategoryService _productCategoryService;
+    private readonly IProductService _productService;
 
-    public ProductCategoryController(IProductCategoryService productCategoryService)
+    public ProductCategoryController(IProductCategoryService productCategoryService, IProductService productService)
     {
         _productCategoryService = productCategoryService;
+        _productService = productService;
     }
 
     [HttpPost]
@@ -59,6 +61,17 @@ public class ProductCategoryController : ControllerBase
     public async Task<IActionResult> GetAllAsync(CancellationToken cancellationToken)
     {
         var result = await _productCategoryService.RetrieveAllAsync(cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("{id:long}/products")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetProductsByCategoryIdAsync(
+        [FromRoute] long id,
+        CancellationToken cancellationToken
+    )
+    {
+        var result = await _productService.RetrieveByCategoryIdAsync(id, cancellationToken);
         return Ok(result);
     }
 
