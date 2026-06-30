@@ -29,7 +29,6 @@ public class ProductRepository : DatabaseRepository, IProductRepository
 
     public async Task<ProductDraft> CreateDraftAsync(
         Product product,
-        long? productId,
         long createdBy,
         CancellationToken cancellationToken
     )
@@ -38,11 +37,32 @@ public class ProductRepository : DatabaseRepository, IProductRepository
         await connection.OpenAsync(cancellationToken);
 
         var command = new CommandDefinition(
-            "SELECT * FROM lineitem.product_draft_insert(@base_product_id, @product_data, @created_by);",
+            "SELECT * FROM lineitem.product_draft_insert(@product_data, @created_by);",
+            new
+            {
+                product_data = Serialize(product),
+                created_by = createdBy
+            },
+            cancellationToken: cancellationToken);
+
+        var result = await connection.QuerySingleAsync<ProductDraftRow>(command);
+        return MapDraft(result);
+    }
+
+    public async Task<ProductDraft> CreateDraftFromProductAsync(
+        long productId,
+        long createdBy,
+        CancellationToken cancellationToken
+    )
+    {
+        await using var connection = GetConnection();
+        await connection.OpenAsync(cancellationToken);
+
+        var command = new CommandDefinition(
+            "SELECT * FROM lineitem.product_draft_insert_from_product(@base_product_id, @created_by);",
             new
             {
                 base_product_id = productId,
-                product_data = Serialize(product),
                 created_by = createdBy
             },
             cancellationToken: cancellationToken);

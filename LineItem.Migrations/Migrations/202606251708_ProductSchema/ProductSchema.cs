@@ -18,6 +18,7 @@ public class ProductSchema : Migration
         Execute.Script(this.GetUpScript("fk_product_active_version.sql"));
 
         Execute.Script(this.GetUpScript("fn_product_draft_insert.sql"));
+        Execute.Script(this.GetUpScript("fn_product_draft_insert_from_product.sql"));
         Execute.Script(this.GetUpScript("fn_product_draft_retrieve_by_id.sql"));
         Execute.Script(this.GetUpScript("fn_product_draft_update.sql"));
         Execute.Script(this.GetUpScript("fn_product_draft_delete.sql"));
@@ -32,7 +33,8 @@ public class ProductSchema : Migration
 
     public override void Down()
     {
-        Execute.Sql("DROP FUNCTION lineitem.product_draft_insert(BIGINT, INT, JSONB, BIGINT)");
+        Execute.Sql("DROP FUNCTION lineitem.product_draft_insert(JSONB, BIGINT)");
+        Execute.Sql("DROP FUNCTION lineitem.product_draft_insert_from_product(BIGINT, BIGINT)");
         Execute.Sql("DROP FUNCTION lineitem.product_draft_retrieve_by_id(BIGINT)");
         Execute.Sql("DROP FUNCTION lineitem.product_draft_update(BIGINT, JSONB, BIGINT)");
         Execute.Sql("DROP FUNCTION lineitem.product_draft_delete(BIGINT)");

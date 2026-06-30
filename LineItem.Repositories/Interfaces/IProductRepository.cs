@@ -10,16 +10,17 @@ public interface IProductRepository
     // --- Product Draft workflow ---
 
     /// <summary>
-    ///     Creates a new draft for a new product (base_product_id = null).
+    ///     Creates a new draft for a new product.
     /// </summary>
-    /// <param name="product"></param>
-    /// <param name="productId">Optionally, the id of the base product to use (for product edits).</param>
-    /// <param name="createdBy"></param>
-    /// <param name="cancellationToken"></param>
     /// <returns>The created draft.</returns>
-    public Task<ProductDraft> CreateDraftAsync(
-        Product product,
-        long? productId,
+    public Task<ProductDraft> CreateDraftAsync(Product product, long createdBy, CancellationToken cancellationToken);
+
+    /// <summary>
+    ///     Creates a draft branched from the active version of an existing published product.
+    /// </summary>
+    /// <returns>The created draft.</returns>
+    public Task<ProductDraft> CreateDraftFromProductAsync(
+        long productId,
         long createdBy,
         CancellationToken cancellationToken
     );
