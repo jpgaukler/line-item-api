@@ -124,12 +124,12 @@ public class ProductInputOption
     /// <summary>
     ///     The value displayed in the UI when configuring the input.
     /// </summary>
-    private string DisplayText { get; set; } = string.Empty;
+    public string DisplayText { get; set; } = string.Empty;
 
     /// <summary>
     ///     The value that is used to generate the product code.
     /// </summary>
-    private string Value { get; set; } = string.Empty;
+    public string Value { get; set; } = string.Empty;
 }
 
 /// <summary>
