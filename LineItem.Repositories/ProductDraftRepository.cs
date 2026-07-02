@@ -28,7 +28,7 @@ public class ProductDraftRepository : DatabaseRepository, IProductDraftRepositor
         await connection.OpenAsync(cancellationToken);
 
         var command = new CommandDefinition(
-            "SELECT * FROM lineitem.product_draft_insert(@product_data, @created_by);",
+            "SELECT * FROM lineitem.product_draft_insert(@product_data::jsonb, @created_by);",
             new
             {
                 product_data = product.ToJson(),
@@ -73,7 +73,7 @@ public class ProductDraftRepository : DatabaseRepository, IProductDraftRepositor
         await connection.OpenAsync(cancellationToken);
 
         var command = new CommandDefinition(
-            "SELECT lineitem.product_draft_update(@id, @product_data, @updated_by);",
+            "SELECT lineitem.product_draft_update(@id, @product_data::jsonb, @updated_by);",
             new
             {
                 id = draftId,
@@ -134,7 +134,7 @@ public class ProductDraftRepository : DatabaseRepository, IProductDraftRepositor
 
             // insert product version row
             var insertVersionCommand = new CommandDefinition(
-                "SELECT * FROM lineitem.product_version_insert(@product_id, @product_data, @created_by);",
+                "SELECT * FROM lineitem.product_version_insert(@product_id, @product_data::jsonb, @created_by);",
                 new
                 {
                     product_id = baseProductId,

@@ -13,7 +13,7 @@ namespace LineItem.Test.Integration;
 
 public class UserControllerTests
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions JSON_OPTIONS = new() { WriteIndented = true };
     private readonly HttpClient _client;
     private readonly ITestOutputHelper _output;
 
@@ -40,7 +40,7 @@ public class UserControllerTests
         var response = await _client.PostAsJsonAsync("v1/users", newUser);
         var user = await response.Content.ReadFromJsonAsync<UserModel>();
 
-        _output.WriteLine($"CREATE - User created:\n{JsonSerializer.Serialize(user, JsonOptions)}");
+        _output.WriteLine($"CREATE - User created:\n{JsonSerializer.Serialize(user, JSON_OPTIONS)}");
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.Should().NotBeNull();
@@ -57,7 +57,7 @@ public class UserControllerTests
         response = await _client.GetAsync(response.Headers.Location);
         user = await response.Content.ReadFromJsonAsync<UserModel>();
 
-        _output.WriteLine($"RETRIEVE - User retrieved:\n{JsonSerializer.Serialize(user, JsonOptions)}");
+        _output.WriteLine($"RETRIEVE - User retrieved:\n{JsonSerializer.Serialize(user, JSON_OPTIONS)}");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         user.Should().NotBeNull();
@@ -78,7 +78,7 @@ public class UserControllerTests
         response = await _client.PutAsJsonAsync($"v1/users/{userId}", updatedUser);
         user = await response.Content.ReadFromJsonAsync<UserModel>();
 
-        _output.WriteLine($"UPDATE - User updated:\n{JsonSerializer.Serialize(user, JsonOptions)}");
+        _output.WriteLine($"UPDATE - User updated:\n{JsonSerializer.Serialize(user, JSON_OPTIONS)}");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         user.Should().NotBeNull();
@@ -118,7 +118,7 @@ public class UserControllerTests
         var response = await _client.PostAsJsonAsync("v1/users", newUser);
         var user = await response.Content.ReadFromJsonAsync<UserModel>();
 
-        _output.WriteLine($"CREATE - First user created:\n{JsonSerializer.Serialize(user, JsonOptions)}");
+        _output.WriteLine($"CREATE - First user created:\n{JsonSerializer.Serialize(user, JSON_OPTIONS)}");
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         user.Should().NotBeNull();
@@ -154,7 +154,7 @@ public class UserControllerTests
         var response = await _client.PostAsJsonAsync("v1/users", firstUser);
         var user1 = await response.Content.ReadFromJsonAsync<UserModel>();
 
-        _output.WriteLine($"CREATE - First user created:\n{JsonSerializer.Serialize(user1, JsonOptions)}");
+        _output.WriteLine($"CREATE - First user created:\n{JsonSerializer.Serialize(user1, JSON_OPTIONS)}");
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         user1.Should().NotBeNull();
@@ -170,7 +170,7 @@ public class UserControllerTests
         response = await _client.PostAsJsonAsync("v1/users", secondUser);
         var user2 = await response.Content.ReadFromJsonAsync<UserModel>();
 
-        _output.WriteLine($"CREATE - Second user created:\n{JsonSerializer.Serialize(user2, JsonOptions)}");
+        _output.WriteLine($"CREATE - Second user created:\n{JsonSerializer.Serialize(user2, JSON_OPTIONS)}");
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         user2.Should().NotBeNull();
