@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using LineItem.Exceptions;
 using LineItem.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -47,12 +48,24 @@ public class ProductController : ControllerBase
 
     [HttpGet("search")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> SearchAsync(
-        [FromQuery] string searchTerm,
-        CancellationToken cancellationToken
-    )
+    public async Task<IActionResult> SearchAsync([FromQuery] string searchTerm, CancellationToken cancellationToken)
     {
         var result = await _productService.SearchAsync(searchTerm, cancellationToken);
         return Ok(result);
+    }
+
+    [HttpDelete("{id:long}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> DeleteAsync([FromRoute] long id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _productService.DeleteAsync(id, cancellationToken);
+            return NoContent();
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(ex.Errors);
+        }
     }
 }

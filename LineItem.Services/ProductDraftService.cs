@@ -132,10 +132,16 @@ public class ProductDraftService : IProductDraftService
             for (var i = 0; i < input.Options.Length; i++)
             {
                 var option = input.Options[i];
+
                 if (string.IsNullOrWhiteSpace(option.DisplayText))
                     errors.Add($"Input '{input.Name}' option {i} requires display text.");
                 else if (option.DisplayText.Length > 500)
                     errors.Add($"Input '{input.Name}' option {i} display text must be 500 characters or less.");
+
+                if (string.IsNullOrWhiteSpace(option.Value))
+                    errors.Add($"Input '{input.Name}' option {i} requires a value.");
+                else if (option.Value.Length > 20)
+                    errors.Add($"Input '{input.Name}' option {i} value must be 20 characters or less.");
             }
         }
 
@@ -162,6 +168,9 @@ public class ProductDraftService : IProductDraftService
                     errors.Add($"Adder '{adder.Name}' option {i} requires display text.");
                 else if (option.DisplayText.Length > 500)
                     errors.Add($"Adder '{adder.Name}' option {i} display text must be 500 characters or less.");
+
+                if (option.Price < 0)
+                    errors.Add($"Adder '{adder.Name}' price {i} cannot be negative.");
             }
         }
 

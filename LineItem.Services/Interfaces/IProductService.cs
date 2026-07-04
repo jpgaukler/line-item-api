@@ -30,4 +30,9 @@ public interface IProductService
     /// </summary>
     /// <returns>Matching products or empty list if none found.</returns>
     public Task<IEnumerable<Product>> SearchAsync(string searchTerm, CancellationToken cancellationToken);
+
+    /// <summary>
+    ///     Deletes a product by id, along with all of its associated product versions.
+    /// </summary>
+    public Task DeleteAsync(long id, CancellationToken cancellationToken);
 }

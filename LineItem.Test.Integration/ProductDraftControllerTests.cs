@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -6,6 +7,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using FluentAssertions;
 using LineItem.Models;
+using LineItem.Test.Integration.Builders;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -16,6 +18,7 @@ public class ProductDraftControllerTests : IAsyncLifetime
     private static readonly JsonSerializerOptions JSON_OPTIONS = new() { WriteIndented = true };
     private readonly HttpClient _client;
     private readonly ITestOutputHelper _output;
+    private int _outputCounter;
     private long _testUserId;
 
     public ProductDraftControllerTests(ITestOutputHelper output)
@@ -40,101 +43,90 @@ public class ProductDraftControllerTests : IAsyncLifetime
         var user = await response.Content.ReadFromJsonAsync<UserModel>();
 
         _testUserId = user!.Id;
-
-        _output.WriteLine($"BEFORE EACH | Test user created | UserId={_testUserId}");
+        LogResponse("CREATE USER (setup)", response.StatusCode, $"UserId={_testUserId}");
     }
 
     public async Task DisposeAsync()
     {
-        await _client.DeleteAsync($"v1/users/{_testUserId}");
-
-        _output.WriteLine($"AFTER EACH | Test user deleted | UserId={_testUserId}");
+        var response = await _client.DeleteAsync($"v1/users/{_testUserId}");
+        LogResponse("DELETE USER (cleanup)", response.StatusCode, $"UserId={_testUserId}");
     }
 
     // ---- Helpers ----
 
-    private static Product BuildTestProduct(string name = "Test Product")
+    private void LogJson(object value)
     {
-        return new Product
-        {
-            ProductCategoryId = 1,
-            Name = name,
-            Description = "A test product description",
-            ProductCodeFormula = "={width}-{height}",
-            Inputs =
-            [
-                new ProductInput
-                {
-                    Name = "Width",
-                    AllowCustomOption = false,
-                    DefaultOptionIndex = 0,
-                    Options =
-                    [
-                        new ProductInputOption { DisplayText = "24 inches", Value = "24" },
-                        new ProductInputOption { DisplayText = "36 inches", Value = "36" },
-                        new ProductInputOption { DisplayText = "48 inches", Value = "48" }
-                    ]
-                },
-                new ProductInput
-                {
-                    Name = "Height",
-                    AllowCustomOption = false,
-                    DefaultOptionIndex = 0,
-                    Options =
-                    [
-                        new ProductInputOption { DisplayText = "48 inches", Value = "48" },
-                        new ProductInputOption { DisplayText = "60 inches", Value = "60" },
-                        new ProductInputOption { DisplayText = "72 inches", Value = "72" }
-                    ]
-                }
-            ],
-            Adders =
-            [
-                new ProductAdder
-                {
-                    Name = "Screen",
-                    AllowCustomOption = false,
-                    DefaultOptionIndex = 0,
-                    Options =
-                    [
-                        new ProductAdderOption { DisplayText = "None", Price = 0 },
-                        new ProductAdderOption { DisplayText = "Standard", Price = 50 }
-                    ]
-                }
-            ]
-        };
+        _output.WriteLine(JsonSerializer.Serialize(value, JSON_OPTIONS));
     }
 
-    private string Serialize(object? value)
+    private void LogResponse(string action, HttpStatusCode status, string? detail = null)
     {
-        return JsonSerializer.Serialize(value, JSON_OPTIONS);
+        _outputCounter++;
+        var count = $"{_outputCounter}.".PadRight(4);
+        var actionCol = action.PadRight(30);
+        var statusCol = status.ToString().PadRight(10);
+        var detailCol = detail ?? string.Empty;
+        _output.WriteLine($"{count} | {actionCol} | {statusCol} | {detailCol}");
     }
 
-    private async Task<ProductDraft> CreateDraftAsync(Product? product = null)
+    private async Task<ProductDraft> CreateDraftAsync(Product product)
     {
-        var response = await _client.PostAsJsonAsync("v1/product-drafts?createdBy=1", product ?? BuildTestProduct());
+        var response = await _client.PostAsJsonAsync($"v1/product-drafts?createdBy={_testUserId}", product);
         var draft = await response.Content.ReadFromJsonAsync<ProductDraft>();
-        return draft!;
+        LogResponse("CREATE DRAFT (setup)", response.StatusCode, $"DraftId={draft!.Id}");
+        return draft;
+    }
+
+    private async Task<Product> PublishDraftAsync(long draftId)
+    {
+        var response = await _client.PostAsync($"v1/product-drafts/{draftId}/publish?createdBy={_testUserId}", null);
+        var product = await response.Content.ReadFromJsonAsync<Product>();
+        LogResponse("PUBLISH DRAFT (setup)", response.StatusCode, $"ProductId={product!.Id}");
+        return product;
     }
 
     private async Task CleanupDraftAsync(long draftId)
     {
-        await _client.DeleteAsync($"v1/product-drafts/{draftId}");
+        var response = await _client.DeleteAsync($"v1/product-drafts/{draftId}");
+        LogResponse("DELETE DRAFT (cleanup)", response.StatusCode, $"DraftId={draftId}");
+    }
+
+    private async Task<ProductCategory> CreateCategoryAsync(string name)
+    {
+        var category = new ProductCategory { Name = name };
+        var response = await _client.PostAsJsonAsync($"v1/product-categories?createdBy={_testUserId}", category);
+        var created = await response.Content.ReadFromJsonAsync<ProductCategory>();
+        LogResponse("CREATE CATEGORY (setup)", response.StatusCode, $"CategoryId={created!.Id}");
+        return created;
+    }
+
+    private async Task CleanupCategoryAsync(long categoryId)
+    {
+        var response = await _client.DeleteAsync($"v1/product-categories/{categoryId}");
+        LogResponse("DELETE CATEGORY (cleanup)", response.StatusCode, $"CategoryId={categoryId}");
+    }
+
+    private async Task CleanupProductAsync(long productId)
+    {
+        var response = await _client.DeleteAsync($"v1/products/{productId}");
+        LogResponse("DELETE PRODUCT (cleanup)", response.StatusCode, $"ProductId={productId}");
     }
 
     // ---- Tests ----
 
     [Fact]
-    public async Task DraftCRUD_WithValidProduct_IsSuccessful()
+    public async Task ProductDraftCRUD_IsSuccessful()
     {
         ProductDraft? draft = null;
 
         try
         {
             // CREATE
-            var newProduct = BuildTestProduct();
+            var newProduct = ProductBuilder.Default().Build();
             var response = await _client.PostAsJsonAsync($"v1/product-drafts?createdBy={_testUserId}", newProduct);
             draft = await response.Content.ReadFromJsonAsync<ProductDraft>();
+            LogResponse("CREATE", response.StatusCode, $"DraftId={draft!.Id}");
+            // LogJson(draft);
             response.StatusCode.Should().Be(HttpStatusCode.Created);
             response.Headers.Location.Should().NotBeNull();
             response.Headers.Location.ToString().Should().Contain("v1/product-drafts/");
@@ -142,6 +134,9 @@ public class ProductDraftControllerTests : IAsyncLifetime
             draft.Id.Should().BeGreaterThan(0);
             draft.BaseProductId.Should().BeNull();
             draft.BaseVersion.Should().BeNull();
+            draft.Product.Id.Should().Be(0);
+            draft.Product.Version.Should().Be(0);
+            draft.Product.ProductCategoryId.Should().Be(newProduct.ProductCategoryId);
             draft.Product.Name.Should().Be(newProduct.Name);
             draft.Product.Description.Should().Be(newProduct.Description);
             draft.Product.Inputs.Should().BeEquivalentTo(newProduct.Inputs);
@@ -151,17 +146,19 @@ public class ProductDraftControllerTests : IAsyncLifetime
             draft.UpdatedAt.Should().BeNull();
             draft.UpdatedBy.Should().BeNull();
 
-            _output.WriteLine($"CREATE | Response: {response.StatusCode} | DraftId={draft.Id}");
-            // _output.WriteLine(Serialize(draft));
-
             // RETRIEVE
             var createdAt = draft.CreatedAt;
             response = await _client.GetAsync(response.Headers.Location);
+            LogResponse("RETRIEVE", response.StatusCode);
             draft = await response.Content.ReadFromJsonAsync<ProductDraft>();
+            // LogJson(draft);
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             draft.Should().NotBeNull();
             draft.BaseProductId.Should().BeNull();
             draft.BaseVersion.Should().BeNull();
+            draft.Product.Id.Should().Be(0);
+            draft.Product.Version.Should().Be(0);
+            draft.Product.ProductCategoryId.Should().Be(newProduct.ProductCategoryId);
             draft.Product.Name.Should().Be(newProduct.Name);
             draft.Product.Description.Should().Be(newProduct.Description);
             draft.Product.Inputs.Should().BeEquivalentTo(newProduct.Inputs);
@@ -170,48 +167,54 @@ public class ProductDraftControllerTests : IAsyncLifetime
             draft.CreatedBy.Should().Be(_testUserId);
             draft.UpdatedAt.Should().BeNull();
             draft.UpdatedBy.Should().BeNull();
-            _output.WriteLine($"RETRIEVE | Response: {response.StatusCode}");
-            // _output.WriteLine(Serialize(draft)); 
 
             // UPDATE
             var draftId = draft.Id;
-            var updatedProduct = BuildTestProduct("Updated Test Product");
+            var updatedProduct = ProductBuilder.Default()
+                .WithName("Updated name")
+                .WithDescription("Updated description")
+                .WithProductCodeFormula("=MAT{Material}")
+                .WithInput("Material", ["Carbon steel|CS", "Stainless steel|SS"])
+                .WithAdder("Level Sensor", [("High level", 100), ("Low level", 100)])
+                .Build();
             response = await _client.PutAsJsonAsync(
                 $"v1/product-drafts/{draftId}?updatedBy={_testUserId}",
                 updatedProduct
             );
+            LogResponse("UPDATE DRAFT", response.StatusCode);
             response.StatusCode.Should().Be(HttpStatusCode.OK);
-            _output.WriteLine($"UPDATE | Response: {response.StatusCode}.");
 
             // RETRIEVE (verify update)
             response = await _client.GetAsync($"v1/product-drafts/{draftId}");
+            LogResponse("RETRIEVE (verify update)", response.StatusCode);
             draft = await response.Content.ReadFromJsonAsync<ProductDraft>();
+            // LogJson(draft);
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             draft.Should().NotBeNull();
             draft.Id.Should().BeGreaterThan(0);
             draft.BaseProductId.Should().BeNull();
             draft.BaseVersion.Should().BeNull();
+            draft.Product.Id.Should().Be(0);
+            draft.Product.Version.Should().Be(0);
+            draft.Product.ProductCategoryId.Should().Be(updatedProduct.ProductCategoryId);
             draft.Product.Name.Should().Be(updatedProduct.Name);
             draft.Product.Description.Should().Be(updatedProduct.Description);
-            draft.Product.Inputs.Should().BeEquivalentTo(newProduct.Inputs);
-            draft.Product.Adders.Should().BeEquivalentTo(newProduct.Adders);
+            draft.Product.Inputs.Should().BeEquivalentTo(updatedProduct.Inputs);
+            draft.Product.Adders.Should().BeEquivalentTo(updatedProduct.Adders);
             draft.CreatedAt.Should().Be(createdAt);
             draft.CreatedBy.Should().Be(_testUserId);
             draft.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
             draft.UpdatedBy.Should().Be(_testUserId);
-            _output.WriteLine($"RETRIEVE (verify update) | Response: {response.StatusCode}");
-            // _output.WriteLine(Serialize(draft)); 
 
             // DELETE
             response = await _client.DeleteAsync($"v1/product-drafts/{draftId}");
+            LogResponse("DELETE", response.StatusCode);
             response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-            draft = null;
-            _output.WriteLine($"DELETE | Response: {response.StatusCode}");
 
             // RETRIEVE (verify deletion)
             response = await _client.GetAsync($"v1/product-drafts/{draftId}");
+            LogResponse("RETRIEVE (verify deletion)", response.StatusCode);
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-            _output.WriteLine($"RETRIEVE (verify deletion) | Response: {response.StatusCode}");
         }
         finally
         {
@@ -220,230 +223,248 @@ public class ProductDraftControllerTests : IAsyncLifetime
         }
     }
 
-    // [Fact]
-    // public async Task PublishDraft_WithValidProduct_CreatesNewProduct()
-    // {
-    //     ProductDraft? draft = null;
-    //
-    //     try
-    //     {
-    //         // CREATE DRAFT
-    //         draft = await CreateDraftAsync();
-    //
-    //         _output.WriteLine($"CREATE - Draft created: DraftId={draft.Id}");
-    //
-    //         draft.Should().NotBeNull();
-    //         draft.Id.Should().BeGreaterThan(0);
-    //
-    //         // PUBLISH
-    //         var response = await _client.PostAsync($"v1/product-drafts/{draft.Id}/publish?createdBy=1", null);
-    //         var product = await response.Content.ReadFromJsonAsync<Product>();
-    //
-    //         _output.WriteLine($"PUBLISH - Product published:\n{Serialize(product)}");
-    //
-    //         response.StatusCode.Should().Be(HttpStatusCode.OK);
-    //         product.Should().NotBeNull();
-    //         product.Id.Should().BeGreaterThan(0);
-    //         product.Name.Should().Be(draft.Product.Name);
-    //         product.Description.Should().Be(draft.Product.Description);
-    //         product.Inputs.Should().BeEquivalentTo(draft.Product.Inputs);
-    //         product.Adders.Should().BeEquivalentTo(draft.Product.Adders);
-    //
-    //         // RETRIEVE (verify product exists)
-    //         response = await _client.GetAsync($"v1/products/{product.Id}");
-    //         var retrievedProduct = await response.Content.ReadFromJsonAsync<Product>();
-    //
-    //         _output.WriteLine(
-    //             $"RETRIEVE - Product retrieved:\n{Serialize(retrievedProduct)}");
-    //
-    //         response.StatusCode.Should().Be(HttpStatusCode.OK);
-    //         retrievedProduct.Should().NotBeNull();
-    //         retrievedProduct!.Id.Should().Be(product.Id);
-    //
-    //         // VERIFY DRAFT DELETED
-    //         response = await _client.GetAsync($"v1/product-drafts/{draft.Id}");
-    //
-    //         _output.WriteLine($"RETRIEVE (verify draft deleted) - Response: {response.StatusCode}");
-    //
-    //         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-    //         draft = null;
-    //     }
-    //     finally
-    //     {
-    //         if (draft is not null)
-    //             await CleanupDraftAsync(draft.Id);
-    //     }
-    // }
-    //
-    // [Fact]
-    // public async Task CreateDraftFromProduct_WithValidProduct_IsSuccessful()
-    // {
-    //     ProductDraft? initialDraft = null;
-    //     ProductDraft? editDraft = null;
-    //
-    //     try
-    //     {
-    //         // CREATE AND PUBLISH INITIAL PRODUCT
-    //         initialDraft = await CreateDraftAsync();
-    //         var response = await _client.PostAsync($"v1/product-drafts/{initialDraft.Id}/publish?createdBy=1", null);
-    //         var product = await response.Content.ReadFromJsonAsync<Product>();
-    //
-    //         _output.WriteLine($"PUBLISH - Initial product published: ProductId={product!.Id}");
-    //
-    //         response.StatusCode.Should().Be(HttpStatusCode.OK);
-    //         product.Should().NotBeNull();
-    //         initialDraft = null;
-    //
-    //         // CREATE DRAFT FROM PRODUCT
-    //         response = await _client.PostAsync($"v1/product-drafts/from-product/{product.Id}?createdBy=1", null);
-    //         editDraft = await response.Content.ReadFromJsonAsync<ProductDraft>();
-    //
-    //         _output.WriteLine(
-    //             $"CREATE FROM PRODUCT - Edit draft created:\n{Serialize(editDraft)}");
-    //
-    //         response.StatusCode.Should().Be(HttpStatusCode.Created);
-    //         editDraft.Should().NotBeNull();
-    //         editDraft!.Id.Should().BeGreaterThan(0);
-    //         editDraft.BaseProductId.Should().Be(product.Id);
-    //         editDraft.BaseVersion.Should().Be(1);
-    //         editDraft.Product.Name.Should().Be(product.Name);
-    //
-    //         // PUBLISH EDIT DRAFT
-    //         var updatedProduct = editDraft.Product;
-    //         updatedProduct.Name = "Updated Product Name";
-    //
-    //         await _client.PutAsJsonAsync($"v1/product-drafts/{editDraft.Id}?updatedBy=1", updatedProduct);
-    //         response = await _client.PostAsync($"v1/product-drafts/{editDraft.Id}/publish?createdBy=1", null);
-    //         var publishedProduct = await response.Content.ReadFromJsonAsync<Product>();
-    //
-    //         _output.WriteLine(
-    //             $"PUBLISH - Edit draft published:\n{Serialize(publishedProduct)}");
-    //
-    //         response.StatusCode.Should().Be(HttpStatusCode.OK);
-    //         publishedProduct.Should().NotBeNull();
-    //         publishedProduct!.Name.Should().Be("Updated Product Name");
-    //         editDraft = null;
-    //
-    //         // VERIFY VERSION HISTORY
-    //         response = await _client.GetAsync($"v1/products/{product.Id}/versions/1");
-    //         var version1 = await response.Content.ReadFromJsonAsync<Product>();
-    //
-    //         _output.WriteLine($"RETRIEVE VERSION 1:\n{Serialize(version1)}");
-    //
-    //         response.StatusCode.Should().Be(HttpStatusCode.OK);
-    //         version1!.Name.Should().Be(product.Name);
-    //
-    //         response = await _client.GetAsync($"v1/products/{product.Id}/versions/2");
-    //         var version2 = await response.Content.ReadFromJsonAsync<Product>();
-    //
-    //         _output.WriteLine($"RETRIEVE VERSION 2:\n{Serialize(version2)}");
-    //
-    //         response.StatusCode.Should().Be(HttpStatusCode.OK);
-    //         version2!.Name.Should().Be("Updated Product Name");
-    //     }
-    //     finally
-    //     {
-    //         if (initialDraft is not null)
-    //             await CleanupDraftAsync(initialDraft.Id);
-    //         if (editDraft is not null)
-    //             await CleanupDraftAsync(editDraft.Id);
-    //     }
-    // }
-    //
-    // [Fact]
-    // public async Task PublishDraft_WithInvalidProduct_ReturnsBadRequest()
-    // {
-    //     ProductDraft? draft = null;
-    //
-    //     try
-    //     {
-    //         var invalidProduct = BuildTestProduct();
-    //         invalidProduct.Name = string.Empty;
-    //
-    //         draft = await CreateDraftAsync(invalidProduct);
-    //
-    //         _output.WriteLine($"CREATE - Draft created with invalid product: DraftId={draft.Id}");
-    //
-    //         var response = await _client.PostAsync($"v1/product-drafts/{draft.Id}/publish?createdBy=1", null);
-    //         var errors = await response.Content.ReadFromJsonAsync<List<string>>();
-    //
-    //         _output.WriteLine($"PUBLISH - Validation errors:\n{Serialize(errors)}");
-    //
-    //         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-    //         errors.Should().NotBeNull();
-    //         errors.Should().NotBeEmpty();
-    //         errors.Should().Contain(e => e.Contains("name", StringComparison.OrdinalIgnoreCase));
-    //     }
-    //     finally
-    //     {
-    //         if (draft is not null)
-    //             await CleanupDraftAsync(draft.Id);
-    //     }
-    // }
-    //
-    // [Fact]
-    // public async Task PublishDraft_WithDuplicateInputNames_ReturnsBadRequest()
-    // {
-    //     ProductDraft? draft = null;
-    //
-    //     try
-    //     {
-    //         var invalidProduct = BuildTestProduct();
-    //         invalidProduct.Inputs[1].Name = invalidProduct.Inputs[0].Name;
-    //
-    //         draft = await CreateDraftAsync(invalidProduct);
-    //
-    //         _output.WriteLine($"CREATE - Draft created with duplicate input names: DraftId={draft.Id}");
-    //
-    //         var response = await _client.PostAsync($"v1/product-drafts/{draft.Id}/publish?createdBy=1", null);
-    //         var errors = await response.Content.ReadFromJsonAsync<List<string>>();
-    //
-    //         _output.WriteLine($"PUBLISH - Validation errors:\n{Serialize(errors)}");
-    //
-    //         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-    //         errors.Should().NotBeNull();
-    //         errors.Should().Contain(e => e.Contains("duplicate", StringComparison.OrdinalIgnoreCase));
-    //     }
-    //     finally
-    //     {
-    //         if (draft is not null)
-    //             await CleanupDraftAsync(draft.Id);
-    //     }
-    // }
-    //
+    [Fact]
+    public async Task PublishDraft_WithValidProduct_CreatesNewProduct()
+    {
+        ProductCategory? productCategory = null;
+        ProductDraft? draft = null;
+        Product? product = null;
+
+        try
+        {
+            // SETUP
+            productCategory = await CreateCategoryAsync("Test Category");
+            draft = await CreateDraftAsync(
+                ProductBuilder.Default()
+                    .WithCategoryId(productCategory.Id)
+                    .Build()
+            );
+
+            // PUBLISH
+            var response =
+                await _client.PostAsync($"v1/product-drafts/{draft.Id}/publish?createdBy={_testUserId}", null);
+            LogResponse("PUBLISH", response.StatusCode);
+            product = await response.Content.ReadFromJsonAsync<Product>();
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            product.Should().NotBeNull();
+            product.Id.Should().BeGreaterThan(0);
+            product.Version.Should().Be(1);
+            product.ProductCategoryId.Should().Be(draft.Product.ProductCategoryId);
+            product.Name.Should().Be(draft.Product.Name);
+            product.Description.Should().Be(draft.Product.Description);
+            product.Inputs.Should().BeEquivalentTo(draft.Product.Inputs);
+            product.Adders.Should().BeEquivalentTo(draft.Product.Adders);
+
+            // RETRIEVE (verify product exists)
+            response = await _client.GetAsync($"v1/products/{product.Id}");
+            LogResponse("RETRIEVE PRODUCT", response.StatusCode);
+            var retrievedProduct = await response.Content.ReadFromJsonAsync<Product>();
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            retrievedProduct.Should().NotBeNull();
+            retrievedProduct.Id.Should().Be(product.Id);
+            retrievedProduct.Version.Should().Be(1);
+            retrievedProduct.ProductCategoryId.Should().Be(draft.Product.ProductCategoryId);
+            retrievedProduct.Description.Should().Be(draft.Product.Description);
+            retrievedProduct.Inputs.Should().BeEquivalentTo(draft.Product.Inputs);
+            retrievedProduct.Adders.Should().BeEquivalentTo(draft.Product.Adders);
+
+            // VERIFY DRAFT DELETED
+            response = await _client.GetAsync($"v1/product-drafts/{draft.Id}");
+            LogResponse("(VERIFY DRAFT DELETED", response.StatusCode);
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+            draft = null;
+        }
+        finally
+        {
+            if (draft is not null)
+                await CleanupDraftAsync(draft.Id);
+            if (product is not null)
+                await CleanupProductAsync(product.Id);
+            if (productCategory is not null)
+                await CleanupCategoryAsync(productCategory.Id);
+        }
+    }
+
+    [Fact]
+    public async Task PublishDraftFromProduct_WithValidProduct_CreatesNewProductVersion()
+    {
+        ProductCategory? productCategory = null;
+        ProductDraft? productDraft1 = null;
+        ProductDraft? productDraft2 = null;
+        Product? product = null;
+
+        try
+        {
+            // SETUP 
+            productCategory = await CreateCategoryAsync("Test Category");
+            productDraft1 = await CreateDraftAsync(
+                ProductBuilder.Default()
+                    .WithCategoryId(productCategory.Id)
+                    .Build()
+            );
+            product = await PublishDraftAsync(productDraft1.Id);
+
+            // CREATE DRAFT FROM PRODUCT
+            var response =
+                await _client.PostAsync($"v1/product-drafts/from-product/{product.Id}?createdBy={_testUserId}", null);
+            productDraft2 = await response.Content.ReadFromJsonAsync<ProductDraft>();
+            LogResponse("CREATE DRAFT FROM PRODUCT", response.StatusCode, $"DraftId={productDraft2!.Id}");
+            response.StatusCode.Should().Be(HttpStatusCode.Created);
+            productDraft2.Should().NotBeNull();
+            productDraft2.Id.Should().BeGreaterThan(0);
+            productDraft2.BaseProductId.Should().Be(product.Id);
+            productDraft2.BaseVersion.Should().Be(1);
+            productDraft2.Product.ProductCategoryId.Should().Be(product.ProductCategoryId);
+            productDraft2.Product.Name.Should().Be(product.Name);
+            productDraft2.Product.Description.Should().Be(product.Description);
+            productDraft2.Product.Inputs.Should().BeEquivalentTo(product.Inputs);
+            productDraft2.Product.Adders.Should().BeEquivalentTo(product.Adders);
+
+            // UPDATE DRAFT
+            var updatedProduct = productDraft2.Product;
+            updatedProduct.Name = "Updated Product Name";
+            response = await _client.PutAsJsonAsync(
+                $"v1/product-drafts/{productDraft2.Id}?updatedBy={_testUserId}",
+                updatedProduct
+            );
+            LogResponse("UPDATE DRAFT", response.StatusCode);
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            // PUBLISH UPDATED DRAFT 
+            response = await _client.PostAsync($"v1/product-drafts/{productDraft2.Id}/publish?createdBy=1", null);
+            LogResponse("PUBLISH UPDATED DRAFT", response.StatusCode);
+            var publishedProduct = await response.Content.ReadFromJsonAsync<Product>();
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            publishedProduct.Should().NotBeNull();
+            publishedProduct.Name.Should().Be("Updated Product Name");
+            publishedProduct.Version.Should().Be(2);
+
+            // VERIFY VERSION HISTORY
+            response = await _client.GetAsync($"v1/products/{product.Id}");
+            LogResponse("RETRIEVE ACTIVE VERSION", response.StatusCode);
+            var activeVersion = await response.Content.ReadFromJsonAsync<Product>();
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            activeVersion.Should().NotBeNull();
+            activeVersion.Name.Should().Be(updatedProduct.Name);
+
+            response = await _client.GetAsync($"v1/products/{product.Id}/versions/1");
+            LogResponse("RETRIEVE VERSION 1", response.StatusCode);
+            var version1 = await response.Content.ReadFromJsonAsync<Product>();
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            version1.Should().NotBeNull();
+            version1.Name.Should().Be(product.Name);
+
+            response = await _client.GetAsync($"v1/products/{product.Id}/versions/2");
+            LogResponse("RETRIEVE VERSION 2", response.StatusCode);
+            var version2 = await response.Content.ReadFromJsonAsync<Product>();
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            version2.Should().NotBeNull();
+            version2.Name.Should().Be(updatedProduct.Name);
+        }
+        finally
+        {
+            if (productDraft1 is not null)
+                await CleanupDraftAsync(productDraft1.Id);
+            if (productDraft2 is not null)
+                await CleanupDraftAsync(productDraft2.Id);
+            if (product is not null)
+                await CleanupProductAsync(product.Id);
+            if (productCategory is not null)
+                await CleanupCategoryAsync(productCategory.Id);
+        }
+    }
+
+    [Fact]
+    public async Task PublishDraft_WithInvalidProduct_ReturnsBadRequest()
+    {
+        ProductDraft? draft = null;
+
+        try
+        {
+            // SETUP - build a product that violates every validation rule
+            var invalidProduct = ProductBuilder.Default()
+                .WithName(string.Empty)
+                .WithDescription(string.Empty)
+                .WithCategoryId(0)
+                .WithInput("DuplicateInputName", ["24 inches|24", "48 inches|48"])
+                .WithInput("DuplicateInputName", ["24 inches|24", "48 inches|48"])
+                .WithInput("InputMissingDisplayText", [$"{string.Empty}|24"])
+                .WithInput("InputMissingValue", [$"24 inches|{string.Empty}"])
+                .WithInput("DefaultInputIndexOutOfRange", ["24 inches|24"], false, 999)
+                .WithAdder("DuplicateAdderName", [("Standard", 50)])
+                .WithAdder("DuplicateAdderName", [("Standard", 50)])
+                .WithAdder("DefaultAdderIndexOutOfRange", [("Standard", 50)], false, 999)
+                .WithAdder("NegativeAdderPrice", [("Standard", -50)])
+                .WithAdder("AdderMissingDisplayText", [(string.Empty, 50)], false, 999)
+                .Build();
+
+            draft = await CreateDraftAsync(invalidProduct);
+
+            // PUBLISH
+            var response =
+                await _client.PostAsync($"v1/product-drafts/{draft.Id}/publish?createdBy={_testUserId}", null);
+            var errors = await response.Content.ReadFromJsonAsync<List<string>>();
+            LogResponse("PUBLISH INVALID PRODUCT", response.StatusCode, $"Errors={errors?.Count}");
+            // LogJson(errors!);
+            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            errors.Should().NotBeNull();
+            errors.Should().NotBeEmpty();
+
+            // name
+            errors.Should().Contain(e => e.Contains("name is required"));
+
+            // description
+            errors.Should().Contain(e => e.Contains("description is required"));
+
+            //category
+            errors.Should().Contain(e => e.Contains("category") && e.Contains("does not exist"));
+
+            // inputs
+            errors.Should().Contain(e => e.Contains("inputs contain duplicate names"));
+            errors.Should().Contain(e =>
+                e.Contains("Input") && e.Contains("default option index") && e.Contains("out of range"));
+            errors.Should().Contain(e => e.Contains("Input") && e.Contains("requires display text"));
+            errors.Should().Contain(e => e.Contains("Input") && e.Contains("requires a value"));
+
+            // adders
+            errors.Should().Contain(e => e.Contains("adders contain duplicate names"));
+            errors.Should().Contain(e =>
+                e.Contains("Adder") && e.Contains("default option index") && e.Contains("out of range"));
+            errors.Should().Contain(e => e.Contains("Adder") && e.Contains("requires display text"));
+            errors.Should()
+                .Contain(e => e.Contains("Adder") && e.Contains("price") && e.Contains("cannot be negative"));
+        }
+        finally
+        {
+            if (draft is not null)
+                await CleanupDraftAsync(draft.Id);
+        }
+    }
+
     [Fact]
     public async Task GetDraft_WithInvalidId_ReturnsNotFound()
     {
         const long invalidDraftId = 0;
-
         var response = await _client.GetAsync($"v1/product-drafts/{invalidDraftId}");
-
-        _output.WriteLine($"GET - Attempted to retrieve draft with invalid ID: {invalidDraftId}");
-
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        LogResponse("GET PRODUCT", response.StatusCode);
     }
 
     [Fact]
     public async Task CreateDraftFromProduct_WithInvalidProductId_ReturnsNotFound()
     {
         const long invalidProductId = 0;
-
         var response = await _client.PostAsync($"v1/product-drafts/from-product/{invalidProductId}?createdBy=1", null);
-
-        _output.WriteLine($"CREATE FROM PRODUCT - Attempted with invalid ProductId: {invalidProductId}");
-
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        LogResponse("CREATE DRAFT", response.StatusCode);
     }
 
     [Fact]
     public async Task PublishDraft_WithInvalidId_ReturnsNotFound()
     {
         const long invalidDraftId = 0;
-
         var response = await _client.PostAsync($"v1/product-drafts/{invalidDraftId}/publish?createdBy=1", null);
-
-        _output.WriteLine($"PUBLISH - Attempted to publish draft with invalid ID: {invalidDraftId}");
-
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        LogResponse("PUBLISH PRODUCT", response.StatusCode);
     }
 }

@@ -84,4 +84,17 @@ public class ProductRepository : DatabaseRepository, IProductRepository
         var results = await connection.QueryAsync<ProductVersionRow>(command);
         return results.Select(r => r.ProductData.ToProduct());
     }
+
+    public async Task DeleteAsync(long id, CancellationToken cancellationToken)
+    {
+        await using var connection = GetConnection();
+        await connection.OpenAsync(cancellationToken);
+
+        var command = new CommandDefinition(
+            "SELECT lineitem.product_delete(@id);",
+            new { id },
+            cancellationToken: cancellationToken);
+
+        await connection.ExecuteAsync(command);
+    }
 }

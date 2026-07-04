@@ -13,6 +13,11 @@ public class Product
     public long Id { get; set; }
 
     /// <summary>
+    ///     The version of the product. This is automatically incremented when a product is updated.
+    /// </summary>
+    public int Version { get; set; }
+
+    /// <summary>
     ///     Id of the product category which the product belongs to.
     /// </summary>
     public long ProductCategoryId { get; set; }

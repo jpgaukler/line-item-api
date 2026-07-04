@@ -9,13 +9,11 @@ namespace LineItem.Services;
 
 public class ProductService : IProductService
 {
-    private readonly IProductCategoryRepository _productCategoryRepository;
     private readonly IProductRepository _productRepository;
 
-    public ProductService(IProductRepository productRepository, IProductCategoryRepository productCategoryRepository)
+    public ProductService(IProductRepository productRepository)
     {
         _productRepository = productRepository;
-        _productCategoryRepository = productCategoryRepository;
     }
 
     public Task<Product?> RetrieveByIdAsync(long productId, CancellationToken cancellationToken)
@@ -36,5 +34,11 @@ public class ProductService : IProductService
     public Task<IEnumerable<Product>> SearchAsync(string searchTerm, CancellationToken cancellationToken)
     {
         return _productRepository.SearchAsync(searchTerm, cancellationToken);
+    }
+
+    public Task DeleteAsync(long id, CancellationToken cancellationToken)
+    {
+        // TODO: if product is used on a quote, prevent delete
+        return _productRepository.DeleteAsync(id, cancellationToken);
     }
 }
