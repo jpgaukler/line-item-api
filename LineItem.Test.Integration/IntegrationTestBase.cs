@@ -36,27 +36,30 @@ public abstract class IntegrationTestBase : IAsyncLifetime
             : new HttpClient { BaseAddress = new Uri(_apiServerUrl) }; // run tests against a live API
     }
 
-    // ---- Setup/Teardown ----
-
     public async Task InitializeAsync()
     {
-        var testUser = new UserModel
-        {
-            ExternalId = $"auth0|test-{Guid.NewGuid()}",
-            DisplayName = $"{GetType().Name} Test User"
-        };
-
-        var response = await Client.PostAsJsonAsync("v1/users", testUser);
-        var user = await response.Content.ReadFromJsonAsync<UserModel>();
-
-        TestUserId = user!.Id;
-        LogResponse("CREATE USER (setup)", response.StatusCode, $"UserId={TestUserId}");
+        await OnInitializeAsync();
     }
 
     public async Task DisposeAsync()
     {
-        var response = await Client.DeleteAsync($"v1/users/{TestUserId}");
-        LogResponse("DELETE USER (cleanup)", response.StatusCode, $"UserId={TestUserId}");
+        await OnDisposeAsync();
+    }
+
+    /// <summary>
+    ///     Override this method to perform any setup required before running tests.
+    /// </summary>
+    protected virtual Task OnInitializeAsync()
+    {
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    ///     Override this method to perform any cleanup required after running tests.
+    /// </summary>
+    protected virtual Task OnDisposeAsync()
+    {
+        return Task.CompletedTask;
     }
 
     // ---- Helpers ----
@@ -74,6 +77,27 @@ public abstract class IntegrationTestBase : IAsyncLifetime
         var statusCol = status.ToString().PadRight(10);
         var detailCol = detail ?? string.Empty;
         _output.WriteLine($"{count} | {actionCol} | {statusCol} | {detailCol}");
+    }
+
+    protected async Task CreateTestUserAsync()
+    {
+        var testUser = new UserModel
+        {
+            ExternalId = $"auth0|test-{Guid.NewGuid()}",
+            DisplayName = $"{GetType().Name} Test User"
+        };
+
+        var response = await Client.PostAsJsonAsync("v1/users", testUser);
+        var user = await response.Content.ReadFromJsonAsync<UserModel>();
+
+        TestUserId = user!.Id;
+        LogResponse("CREATE USER (setup)", response.StatusCode, $"UserId={TestUserId}");
+    }
+
+    protected async Task CleanupTestUserAsync()
+    {
+        var response = await Client.DeleteAsync($"v1/users/{TestUserId}");
+        LogResponse("DELETE USER (cleanup)", response.StatusCode, $"UserId={TestUserId}");
     }
 
     protected async Task<ProductCategory> CreateProductCategoryAsync(string name = "Test Category")

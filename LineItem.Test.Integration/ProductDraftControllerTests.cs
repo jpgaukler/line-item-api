@@ -18,6 +18,16 @@ public class ProductDraftControllerTests : IntegrationTestBase
     {
     }
 
+    protected override async Task OnInitializeAsync()
+    {
+        await CreateTestUserAsync();
+    }
+
+    protected override async Task OnDisposeAsync()
+    {
+        await CleanupTestUserAsync();
+    }
+
     [Fact]
     public async Task ProductDraftCRUD_IsSuccessful()
     {
