@@ -23,7 +23,7 @@ using Serilog.Formatting.Compact;
 
 namespace LineItem.Api;
 
-public static class Program
+public class Program
 {
     public static void Main(string[] args)
     {
