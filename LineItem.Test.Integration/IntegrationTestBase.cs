@@ -15,25 +15,15 @@ namespace LineItem.Test.Integration;
 public abstract class IntegrationTestBase : IAsyncLifetime
 {
     private static readonly JsonSerializerOptions JSON_OPTIONS = new() { WriteIndented = true };
-
-    /// <summary>
-    ///     Set the API_SERVER_URL environment variable to run tests against a live API server.
-    /// </summary>
-    private readonly string? _apiServerUrl = Environment.GetEnvironmentVariable("API_SERVER_URL") ?? null;
-
     private readonly ITestOutputHelper _output;
     protected readonly HttpClient Client;
-
     private int _outputCounter;
     protected long TestUserId;
-
 
     protected IntegrationTestBase(ApiFixture fixture, ITestOutputHelper output)
     {
         _output = output;
-        Client = string.IsNullOrWhiteSpace(_apiServerUrl)
-            ? fixture.CreateClient() // use WebApplicationFactory to create a test server and client
-            : new HttpClient { BaseAddress = new Uri(_apiServerUrl) }; // run tests against a live API
+        Client = fixture.Client;
     }
 
     public async Task InitializeAsync()

@@ -1,3 +1,5 @@
+using System;
+using System.Net.Http;
 using LineItem.Api;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -11,6 +13,18 @@ namespace LineItem.Test.Integration.Fixtures;
 /// </summary>
 public class ApiFixture : WebApplicationFactory<Program>
 {
+    public ApiFixture()
+    {
+        // Set the API_SERVER_URL environment variable to run tests against a live API server.
+        var serverUrl = Environment.GetEnvironmentVariable("API_SERVER_URL");
+
+        Client = string.IsNullOrWhiteSpace(serverUrl)
+            ? CreateClient() // use WebApplicationFactory to create a test server and client
+            : new HttpClient { BaseAddress = new Uri(serverUrl) }; // run tests against a live API
+    }
+
+    public HttpClient Client { get; private set; }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("local");
