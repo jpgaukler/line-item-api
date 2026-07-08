@@ -21,7 +21,7 @@ public class UserService : IUserService
         var existingUser = await _userRepository.RetrieveByExternalIdAsync(user.ExternalId, cancellationToken);
 
         if (existingUser != null)
-            throw new BadRequestException($"A user with External Id = {user.ExternalId} already exists.");
+            throw new ValidationException($"A user with External Id = {user.ExternalId} already exists.");
 
         var createdUser = await _userRepository.CreateAsync(user, cancellationToken);
         return createdUser;
@@ -42,7 +42,7 @@ public class UserService : IUserService
         var existingUser = await _userRepository.RetrieveByExternalIdAsync(user.ExternalId, cancellationToken);
 
         if (existingUser != null)
-            throw new BadRequestException($"A user with External Id = {user.ExternalId} already exists.");
+            throw new ValidationException($"A user with External Id = {user.ExternalId} already exists.");
 
         var updatedUser = await _userRepository.UpdateAsync(id, user, cancellationToken);
         return updatedUser;

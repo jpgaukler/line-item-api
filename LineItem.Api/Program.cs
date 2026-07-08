@@ -23,7 +23,7 @@ using Serilog.Formatting.Compact;
 
 namespace LineItem.Api;
 
-public static class Program
+public class Program
 {
     public static void Main(string[] args)
     {
@@ -37,7 +37,7 @@ public static class Program
             // configure the service collection
             ConfigureServices(builder.Services, builder.Configuration);
 
-            // configure and run the application
+            // configure the application (middleware, controllers, etc.)
             var application = builder.Build();
             ConfigureApplication(application);
 
@@ -128,13 +128,21 @@ public static class Program
         services
             .ConfigureDapperMapping()
             .AddDatabaseOptions(configuration)
-            .AddScoped<IUserRepository, UserRepository>();
+            .AddScoped<IUserRepository, UserRepository>()
+            .AddScoped<IProductCategoryRepository, ProductCategoryRepository>()
+            .AddScoped<IProductDraftRepository, ProductDraftRepository>()
+            .AddScoped<IProductRepository, ProductRepository>();
 
         // add services
-        services.AddScoped<IUserService, UserService>();
+        services
+            .AddScoped<IUserService, UserService>()
+            .AddScoped<IProductCategoryService, ProductCategoryService>()
+            .AddScoped<IProductDraftService, ProductDraftService>()
+            .AddScoped<IProductService, ProductService>();
 
         // Configure health checks
-        services.AddHealthChecks()
+        services
+            .AddHealthChecks()
             .AddCheck<DatabaseHealthCheck>(nameof(DatabaseHealthCheck));
 
         // add cache for user context
