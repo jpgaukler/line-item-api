@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 
 namespace LineItem.Repositories;
 
-public class ProductDraftRepository : DatabaseRepository, IProductDraftRepository
+public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
 {
     public ProductDraftRepository(IOptions<DatabaseOptions> options) : base(options)
     {

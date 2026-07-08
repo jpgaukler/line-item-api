@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace LineItem.Repositories;
 
-public class UserRepository : DatabaseRepository, IUserRepository
+public class UserRepository : RepositoryBase, IUserRepository
 {
     public UserRepository(IOptions<DatabaseOptions> options) : base(options)
     {

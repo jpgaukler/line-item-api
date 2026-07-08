@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace LineItem.Repositories;
 
-public class ProductCategoryRepository : DatabaseRepository, IProductCategoryRepository
+public class ProductCategoryRepository : RepositoryBase, IProductCategoryRepository
 {
     public ProductCategoryRepository(IOptions<DatabaseOptions> options) : base(options)
     {

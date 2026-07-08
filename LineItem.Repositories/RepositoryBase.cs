@@ -4,11 +4,11 @@ using Npgsql;
 
 namespace LineItem.Repositories;
 
-public class DatabaseRepository
+public class RepositoryBase
 {
     private readonly string _connectionString;
 
-    protected DatabaseRepository(IOptions<DatabaseOptions> options)
+    protected RepositoryBase(IOptions<DatabaseOptions> options)
     {
         _connectionString = options.Value.ConnectionString;
     }
