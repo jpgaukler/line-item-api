@@ -4,7 +4,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using FluentAssertions;
-using LineItem.Test.Integration.Fixtures;
+using LineItem.Test.Integration.Setup;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -16,16 +16,6 @@ public class ProductCategoryControllerTests : IntegrationTestBase
     {
     }
 
-    protected override async Task OnInitializeAsync()
-    {
-        await CreateTestUserAsync();
-    }
-
-    protected override async Task OnDisposeAsync()
-    {
-        await CleanupTestUserAsync();
-    }
-
     [Fact]
     public async Task ProductCategoryCRUD_IsSuccessful()
     {
@@ -35,9 +25,9 @@ public class ProductCategoryControllerTests : IntegrationTestBase
         {
             // CREATE
             var newCategory = new ProductCategory { Name = "Test Category" };
-            var response = await Client.PostAsJsonAsync($"v1/product-categories?createdBy={TestUserId}", newCategory);
+            var response = await Client.PostAsJsonAsync("v1/product-categories", newCategory);
             category = await response.Content.ReadFromJsonAsync<ProductCategory>();
-            LogResponse("CREATE", response.StatusCode, $"CategoryId={category!.Id}");
+            LogResponse(response, $"CategoryId={category!.Id}");
             // LogJson(category);
             response.StatusCode.Should().Be(HttpStatusCode.Created);
             response.Headers.Location.Should().NotBeNull();
@@ -54,7 +44,7 @@ public class ProductCategoryControllerTests : IntegrationTestBase
             var createdAt = category.CreatedAt;
             response = await Client.GetAsync(response.Headers.Location);
             category = await response.Content.ReadFromJsonAsync<ProductCategory>();
-            LogResponse("RETRIEVE", response.StatusCode);
+            LogResponse(response);
             // LogJson(category);
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             category.Should().NotBeNull();
@@ -68,7 +58,7 @@ public class ProductCategoryControllerTests : IntegrationTestBase
             // RETRIEVE ALL
             response = await Client.GetAsync("v1/product-categories");
             var categories = await response.Content.ReadFromJsonAsync<List<ProductCategory>>();
-            LogResponse("RETRIEVE ALL", response.StatusCode, $"Count={categories?.Count}");
+            LogResponse(response, $"Count={categories?.Count}");
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             categories.Should().NotBeNull();
             categories.Should().Contain(c => c.Id == category!.Id);
@@ -77,11 +67,11 @@ public class ProductCategoryControllerTests : IntegrationTestBase
             var categoryId = category.Id;
             var updatedCategory = new ProductCategory { Name = "Updated Test Category" };
             response = await Client.PutAsJsonAsync(
-                $"v1/product-categories/{categoryId}?updatedBy={TestUserId}",
+                $"v1/product-categories/{categoryId}",
                 updatedCategory
             );
             category = await response.Content.ReadFromJsonAsync<ProductCategory>();
-            LogResponse("UPDATE", response.StatusCode, $"CategoryId={categoryId}");
+            LogResponse(response, $"CategoryId={categoryId}");
             // LogJson(category);
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             category.Should().NotBeNull();
@@ -95,13 +85,13 @@ public class ProductCategoryControllerTests : IntegrationTestBase
 
             // DELETE
             response = await Client.DeleteAsync($"v1/product-categories/{categoryId}");
-            LogResponse("DELETE", response.StatusCode, $"CategoryId={categoryId}");
+            LogResponse(response, $"CategoryId={categoryId}");
             response.StatusCode.Should().Be(HttpStatusCode.NoContent);
             category = null;
 
             // RETRIEVE (verify deletion)
             response = await Client.GetAsync($"v1/product-categories/{categoryId}");
-            LogResponse("RETRIEVE (verify deletion)", response.StatusCode);
+            LogResponse(response);
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
         finally
@@ -115,8 +105,8 @@ public class ProductCategoryControllerTests : IntegrationTestBase
     public async Task CreateCategory_WithEmptyName_ReturnsBadRequest()
     {
         var invalidCategory = new ProductCategory { Name = string.Empty };
-        var response = await Client.PostAsJsonAsync($"v1/product-categories?createdBy={TestUserId}", invalidCategory);
-        LogResponse("CREATE WITH EMPTY NAME", response.StatusCode);
+        var response = await Client.PostAsJsonAsync("v1/product-categories", invalidCategory);
+        LogResponse(response);
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
@@ -124,8 +114,8 @@ public class ProductCategoryControllerTests : IntegrationTestBase
     public async Task CreateCategory_WithNameExceedingMaxLength_ReturnsBadRequest()
     {
         var invalidCategory = new ProductCategory { Name = new string('A', 101) };
-        var response = await Client.PostAsJsonAsync($"v1/product-categories?createdBy={TestUserId}", invalidCategory);
-        LogResponse("CREATE WITH NAME TOO LONG", response.StatusCode);
+        var response = await Client.PostAsJsonAsync("v1/product-categories", invalidCategory);
+        LogResponse(response);
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
@@ -142,10 +132,10 @@ public class ProductCategoryControllerTests : IntegrationTestBase
             // UPDATE
             var invalidCategory = new ProductCategory { Name = string.Empty };
             var response = await Client.PutAsJsonAsync(
-                $"v1/product-categories/{category.Id}?updatedBy={TestUserId}",
+                $"v1/product-categories/{category.Id}",
                 invalidCategory
             );
-            LogResponse("UPDATE WITH EMPTY NAME", response.StatusCode, $"CategoryId={category.Id}");
+            LogResponse(response, $"CategoryId={category.Id}");
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
         finally
@@ -168,10 +158,10 @@ public class ProductCategoryControllerTests : IntegrationTestBase
             // UPDATE
             var invalidCategory = new ProductCategory { Name = new string('A', 101) };
             var response = await Client.PutAsJsonAsync(
-                $"v1/product-categories/{category.Id}?updatedBy={TestUserId}",
+                $"v1/product-categories/{category.Id}",
                 invalidCategory
             );
-            LogResponse("UPDATE WITH NAME TOO LONG", response.StatusCode, $"CategoryId={category.Id}");
+            LogResponse(response, $"CategoryId={category.Id}");
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
         finally
@@ -186,7 +176,7 @@ public class ProductCategoryControllerTests : IntegrationTestBase
     {
         const long invalidCategoryId = 0;
         var response = await Client.GetAsync($"v1/product-categories/{invalidCategoryId}");
-        LogResponse("GET WITH INVALID ID", response.StatusCode);
+        LogResponse(response);
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
@@ -196,10 +186,10 @@ public class ProductCategoryControllerTests : IntegrationTestBase
         const long invalidCategoryId = 0;
         var updatedCategory = new ProductCategory { Name = "Updated Category" };
         var response = await Client.PutAsJsonAsync(
-            $"v1/product-categories/{invalidCategoryId}?updatedBy={TestUserId}",
+            $"v1/product-categories/{invalidCategoryId}",
             updatedCategory
         );
-        LogResponse("UPDATE WITH INVALID ID", response.StatusCode);
+        LogResponse(response);
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 }

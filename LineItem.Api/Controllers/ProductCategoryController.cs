@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using LineItem.Api.Helpers;
 using LineItem.Exceptions;
 using LineItem.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
@@ -25,13 +26,13 @@ public class ProductCategoryController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateAsync(
         [FromBody] ProductCategory category,
-        [FromQuery] long createdBy,
         CancellationToken cancellationToken
     )
     {
         try
         {
-            var createdCategory = await _productCategoryService.CreateAsync(category, createdBy, cancellationToken);
+            var createdCategory =
+                await _productCategoryService.CreateAsync(category, HttpContext.GetUserId(), cancellationToken);
             return CreatedAtAction(
                 nameof(GetByIdAsync),
                 new { version = "1", id = createdCategory.Id },
@@ -82,13 +83,13 @@ public class ProductCategoryController : ControllerBase
     public async Task<IActionResult> UpdateAsync(
         [FromRoute] long id,
         [FromBody] ProductCategory category,
-        [FromQuery] long updatedBy,
         CancellationToken cancellationToken
     )
     {
         try
         {
-            var updatedCategory = await _productCategoryService.UpdateAsync(id, category, updatedBy, cancellationToken);
+            var updatedCategory =
+                await _productCategoryService.UpdateAsync(id, category, HttpContext.GetUserId(), cancellationToken);
 
             return updatedCategory is not null
                 ? Ok(updatedCategory)

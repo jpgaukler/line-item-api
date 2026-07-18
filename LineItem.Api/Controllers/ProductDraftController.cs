@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using LineItem.Api.Helpers;
 using LineItem.Exceptions;
 using LineItem.Models;
 using LineItem.Services.Interfaces;
@@ -23,11 +24,10 @@ public class ProductDraftController : ControllerBase
     [ProducesResponseType(StatusCodes.Status201Created)]
     public async Task<IActionResult> CreateAsync(
         [FromBody] Product product,
-        [FromQuery] long createdBy,
         CancellationToken cancellationToken
     )
     {
-        var draft = await _productDraftService.CreateAsync(product, createdBy, cancellationToken);
+        var draft = await _productDraftService.CreateAsync(product, HttpContext.GetUserId(), cancellationToken);
         return CreatedAtAction(nameof(GetByIdAsync), new { version = "1", id = draft.Id }, draft);
     }
 
@@ -36,13 +36,13 @@ public class ProductDraftController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CreateFromProductAsync(
         [FromRoute] long productId,
-        [FromQuery] long createdBy,
         CancellationToken cancellationToken
     )
     {
         try
         {
-            var draft = await _productDraftService.CreateFromProductAsync(productId, createdBy, cancellationToken);
+            var draft = await _productDraftService.CreateFromProductAsync(productId, HttpContext.GetUserId(),
+                cancellationToken);
             return CreatedAtAction(nameof(GetByIdAsync), new { version = "1", id = draft.Id }, draft);
         }
         catch (NotFoundException ex)
@@ -69,13 +69,12 @@ public class ProductDraftController : ControllerBase
     public async Task<IActionResult> UpdateAsync(
         [FromRoute] long id,
         [FromBody] Product product,
-        [FromQuery] long updatedBy,
         CancellationToken cancellationToken
     )
     {
         try
         {
-            await _productDraftService.UpdateAsync(id, product, updatedBy, cancellationToken);
+            await _productDraftService.UpdateAsync(id, product, HttpContext.GetUserId(), cancellationToken);
             return Ok();
         }
         catch (NotFoundException ex)
@@ -90,13 +89,12 @@ public class ProductDraftController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> PublishAsync(
         [FromRoute] long id,
-        [FromQuery] long createdBy,
         CancellationToken cancellationToken
     )
     {
         try
         {
-            var product = await _productDraftService.PublishAsync(id, createdBy, cancellationToken);
+            var product = await _productDraftService.PublishAsync(id, HttpContext.GetUserId(), cancellationToken);
             return Ok(product);
         }
         catch (NotFoundException ex)

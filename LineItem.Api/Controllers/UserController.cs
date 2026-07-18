@@ -1,8 +1,10 @@
 using System.Threading;
 using System.Threading.Tasks;
+using LineItem.Api.Helpers;
 using LineItem.Exceptions;
 using LineItem.Models;
 using LineItem.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -37,6 +39,14 @@ public class UserController : ControllerBase
         {
             return BadRequest(ex.Errors);
         }
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<IActionResult> GetMeAsync(CancellationToken cancellationToken)
+    {
+        var result = await _userService.RetrieveByIdAsync(HttpContext.GetUserId(), cancellationToken);
+        return result is not null ? Ok(result) : NotFound();
     }
 
     [HttpGet("{id:long}")]

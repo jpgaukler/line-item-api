@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using LineItem.Models;
 using LineItem.Test.Integration.Builders;
-using LineItem.Test.Integration.Fixtures;
+using LineItem.Test.Integration.Setup;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -18,16 +18,6 @@ public class ProductDraftControllerTests : IntegrationTestBase
     {
     }
 
-    protected override async Task OnInitializeAsync()
-    {
-        await CreateTestUserAsync();
-    }
-
-    protected override async Task OnDisposeAsync()
-    {
-        await CleanupTestUserAsync();
-    }
-
     [Fact]
     public async Task ProductDraftCRUD_IsSuccessful()
     {
@@ -37,9 +27,9 @@ public class ProductDraftControllerTests : IntegrationTestBase
         {
             // CREATE
             var newProduct = ProductBuilder.Default().Build();
-            var response = await Client.PostAsJsonAsync($"v1/product-drafts?createdBy={TestUserId}", newProduct);
+            var response = await Client.PostAsJsonAsync("v1/product-drafts", newProduct);
             draft = await response.Content.ReadFromJsonAsync<ProductDraft>();
-            LogResponse("CREATE", response.StatusCode, $"DraftId={draft!.Id}");
+            LogResponse(response, $"DraftId={draft!.Id}");
             // LogJson(draft);
             response.StatusCode.Should().Be(HttpStatusCode.Created);
             response.Headers.Location.Should().NotBeNull();
@@ -63,7 +53,7 @@ public class ProductDraftControllerTests : IntegrationTestBase
             // RETRIEVE
             var createdAt = draft.CreatedAt;
             response = await Client.GetAsync(response.Headers.Location);
-            LogResponse("RETRIEVE", response.StatusCode);
+            LogResponse(response);
             draft = await response.Content.ReadFromJsonAsync<ProductDraft>();
             // LogJson(draft);
             response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -92,15 +82,15 @@ public class ProductDraftControllerTests : IntegrationTestBase
                 .WithAdder("Level Sensor", [("High level", 100), ("Low level", 100)])
                 .Build();
             response = await Client.PutAsJsonAsync(
-                $"v1/product-drafts/{draftId}?updatedBy={TestUserId}",
+                $"v1/product-drafts/{draftId}",
                 updatedProduct
             );
-            LogResponse("UPDATE DRAFT", response.StatusCode);
+            LogResponse(response);
             response.StatusCode.Should().Be(HttpStatusCode.OK);
 
             // RETRIEVE (verify update)
             response = await Client.GetAsync($"v1/product-drafts/{draftId}");
-            LogResponse("RETRIEVE (verify update)", response.StatusCode);
+            LogResponse(response);
             draft = await response.Content.ReadFromJsonAsync<ProductDraft>();
             // LogJson(draft);
             response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -122,12 +112,12 @@ public class ProductDraftControllerTests : IntegrationTestBase
 
             // DELETE
             response = await Client.DeleteAsync($"v1/product-drafts/{draftId}");
-            LogResponse("DELETE", response.StatusCode);
+            LogResponse(response);
             response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
             // RETRIEVE (verify deletion)
             response = await Client.GetAsync($"v1/product-drafts/{draftId}");
-            LogResponse("RETRIEVE (verify deletion)", response.StatusCode);
+            LogResponse(response);
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
         finally
@@ -156,8 +146,8 @@ public class ProductDraftControllerTests : IntegrationTestBase
 
             // PUBLISH
             var response =
-                await Client.PostAsync($"v1/product-drafts/{draft.Id}/publish?createdBy={TestUserId}", null);
-            LogResponse("PUBLISH", response.StatusCode);
+                await Client.PostAsync($"v1/product-drafts/{draft.Id}/publish", null);
+            LogResponse(response);
             product = await response.Content.ReadFromJsonAsync<Product>();
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             product.Should().NotBeNull();
@@ -171,7 +161,7 @@ public class ProductDraftControllerTests : IntegrationTestBase
 
             // RETRIEVE (verify product exists)
             response = await Client.GetAsync($"v1/products/{product.Id}");
-            LogResponse("RETRIEVE PRODUCT", response.StatusCode);
+            LogResponse(response);
             var retrievedProduct = await response.Content.ReadFromJsonAsync<Product>();
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             retrievedProduct.Should().NotBeNull();
@@ -184,7 +174,7 @@ public class ProductDraftControllerTests : IntegrationTestBase
 
             // VERIFY DRAFT DELETED
             response = await Client.GetAsync($"v1/product-drafts/{draft.Id}");
-            LogResponse("(VERIFY DRAFT DELETED", response.StatusCode);
+            LogResponse(response);
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
             draft = null;
         }
@@ -220,9 +210,9 @@ public class ProductDraftControllerTests : IntegrationTestBase
 
             // CREATE DRAFT FROM PRODUCT
             var response =
-                await Client.PostAsync($"v1/product-drafts/from-product/{product.Id}?createdBy={TestUserId}", null);
+                await Client.PostAsync($"v1/product-drafts/from-product/{product.Id}", null);
             productDraft2 = await response.Content.ReadFromJsonAsync<ProductDraft>();
-            LogResponse("CREATE DRAFT FROM PRODUCT", response.StatusCode, $"DraftId={productDraft2!.Id}");
+            LogResponse(response, $"DraftId={productDraft2!.Id}");
             response.StatusCode.Should().Be(HttpStatusCode.Created);
             productDraft2.Should().NotBeNull();
             productDraft2.Id.Should().BeGreaterThan(0);
@@ -238,15 +228,15 @@ public class ProductDraftControllerTests : IntegrationTestBase
             var updatedProduct = productDraft2.Product;
             updatedProduct.Name = "Updated Product Name";
             response = await Client.PutAsJsonAsync(
-                $"v1/product-drafts/{productDraft2.Id}?updatedBy={TestUserId}",
+                $"v1/product-drafts/{productDraft2.Id}",
                 updatedProduct
             );
-            LogResponse("UPDATE DRAFT", response.StatusCode);
+            LogResponse(response);
             response.StatusCode.Should().Be(HttpStatusCode.OK);
 
             // PUBLISH UPDATED DRAFT 
-            response = await Client.PostAsync($"v1/product-drafts/{productDraft2.Id}/publish?createdBy=1", null);
-            LogResponse("PUBLISH UPDATED DRAFT", response.StatusCode);
+            response = await Client.PostAsync($"v1/product-drafts/{productDraft2.Id}/publish", null);
+            LogResponse(response);
             var publishedProduct = await response.Content.ReadFromJsonAsync<Product>();
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             publishedProduct.Should().NotBeNull();
@@ -255,21 +245,21 @@ public class ProductDraftControllerTests : IntegrationTestBase
 
             // VERIFY VERSION HISTORY
             response = await Client.GetAsync($"v1/products/{product.Id}");
-            LogResponse("RETRIEVE ACTIVE VERSION", response.StatusCode);
+            LogResponse(response);
             var activeVersion = await response.Content.ReadFromJsonAsync<Product>();
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             activeVersion.Should().NotBeNull();
             activeVersion.Name.Should().Be(updatedProduct.Name);
 
             response = await Client.GetAsync($"v1/products/{product.Id}/versions/1");
-            LogResponse("RETRIEVE VERSION 1", response.StatusCode);
+            LogResponse(response);
             var version1 = await response.Content.ReadFromJsonAsync<Product>();
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             version1.Should().NotBeNull();
             version1.Name.Should().Be(product.Name);
 
             response = await Client.GetAsync($"v1/products/{product.Id}/versions/2");
-            LogResponse("RETRIEVE VERSION 2", response.StatusCode);
+            LogResponse(response);
             var version2 = await response.Content.ReadFromJsonAsync<Product>();
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             version2.Should().NotBeNull();
@@ -316,9 +306,9 @@ public class ProductDraftControllerTests : IntegrationTestBase
 
             // PUBLISH
             var response =
-                await Client.PostAsync($"v1/product-drafts/{draft.Id}/publish?createdBy={TestUserId}", null);
+                await Client.PostAsync($"v1/product-drafts/{draft.Id}/publish", null);
             var errors = await response.Content.ReadFromJsonAsync<List<string>>();
-            LogResponse("PUBLISH INVALID PRODUCT", response.StatusCode, $"Errors={errors?.Count}");
+            LogResponse(response, $"Errors={errors?.Count}");
             // LogJson(errors!);
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
             errors.Should().NotBeNull();
@@ -361,24 +351,24 @@ public class ProductDraftControllerTests : IntegrationTestBase
         const long invalidDraftId = 0;
         var response = await Client.GetAsync($"v1/product-drafts/{invalidDraftId}");
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        LogResponse("GET PRODUCT", response.StatusCode);
+        LogResponse(response);
     }
 
     [Fact]
     public async Task CreateDraftFromProduct_WithInvalidProductId_ReturnsNotFound()
     {
         const long invalidProductId = 0;
-        var response = await Client.PostAsync($"v1/product-drafts/from-product/{invalidProductId}?createdBy=1", null);
+        var response = await Client.PostAsync($"v1/product-drafts/from-product/{invalidProductId}", null);
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        LogResponse("CREATE DRAFT", response.StatusCode);
+        LogResponse(response);
     }
 
     [Fact]
     public async Task PublishDraft_WithInvalidId_ReturnsNotFound()
     {
         const long invalidDraftId = 0;
-        var response = await Client.PostAsync($"v1/product-drafts/{invalidDraftId}/publish?createdBy=1", null);
+        var response = await Client.PostAsync($"v1/product-drafts/{invalidDraftId}/publish", null);
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        LogResponse("PUBLISH PRODUCT", response.StatusCode);
+        LogResponse(response);
     }
 }

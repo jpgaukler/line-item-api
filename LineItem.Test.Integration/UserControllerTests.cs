@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 using System.Threading.Tasks;
 using FluentAssertions;
 using LineItem.Models;
-using LineItem.Test.Integration.Fixtures;
+using LineItem.Test.Integration.Setup;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -33,7 +33,7 @@ public class UserControllerTests : IntegrationTestBase
 
             var response = await Client.PostAsJsonAsync("v1/users", newUser);
             user = await response.Content.ReadFromJsonAsync<UserModel>();
-            LogResponse("CREATE", response.StatusCode, $"UserId={user!.Id}");
+            LogResponse(response, $"UserId={user!.Id}");
 
             response.StatusCode.Should().Be(HttpStatusCode.Created);
             response.Headers.Location.Should().NotBeNull();
@@ -49,7 +49,7 @@ public class UserControllerTests : IntegrationTestBase
             var createdAt = user.CreatedAt;
             response = await Client.GetAsync(response.Headers.Location);
             user = await response.Content.ReadFromJsonAsync<UserModel>();
-            LogResponse("RETRIEVE", response.StatusCode, $"UserId={user!.Id}");
+            LogResponse(response, $"UserId={user!.Id}");
 
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             user.Should().NotBeNull();
@@ -69,7 +69,7 @@ public class UserControllerTests : IntegrationTestBase
 
             response = await Client.PutAsJsonAsync($"v1/users/{userId}", updatedUser);
             user = await response.Content.ReadFromJsonAsync<UserModel>();
-            LogResponse("UPDATE", response.StatusCode, $"UserId={userId}");
+            LogResponse(response, $"UserId={userId}");
 
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             user.Should().NotBeNull();
@@ -82,14 +82,14 @@ public class UserControllerTests : IntegrationTestBase
 
             // DELETE
             response = await Client.DeleteAsync($"v1/users/{userId}");
-            LogResponse("DELETE", response.StatusCode, $"UserId={userId}");
+            LogResponse(response, $"UserId={userId}");
 
             response.StatusCode.Should().Be(HttpStatusCode.NoContent);
             user = null;
 
             // RETRIEVE (verify deletion)
             response = await Client.GetAsync($"v1/users/{userId}");
-            LogResponse("RETRIEVE (verify deletion)", response.StatusCode);
+            LogResponse(response);
 
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
@@ -116,7 +116,7 @@ public class UserControllerTests : IntegrationTestBase
 
             var response = await Client.PostAsJsonAsync("v1/users", newUser);
             user = await response.Content.ReadFromJsonAsync<UserModel>();
-            LogResponse("CREATE", response.StatusCode, $"UserId={user!.Id}");
+            LogResponse(response, $"UserId={user!.Id}");
 
             response.StatusCode.Should().Be(HttpStatusCode.Created);
             user.Should().NotBeNull();
@@ -130,7 +130,7 @@ public class UserControllerTests : IntegrationTestBase
             };
 
             response = await Client.PostAsJsonAsync("v1/users", duplicateUser);
-            LogResponse("CREATE DUPLICATE", response.StatusCode);
+            LogResponse(response);
 
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
@@ -158,7 +158,7 @@ public class UserControllerTests : IntegrationTestBase
 
             var response = await Client.PostAsJsonAsync("v1/users", firstUser);
             user1 = await response.Content.ReadFromJsonAsync<UserModel>();
-            LogResponse("CREATE USER 1", response.StatusCode, $"UserId={user1!.Id}");
+            LogResponse(response, $"UserId={user1!.Id}");
 
             response.StatusCode.Should().Be(HttpStatusCode.Created);
             user1.Should().NotBeNull();
@@ -173,7 +173,7 @@ public class UserControllerTests : IntegrationTestBase
 
             response = await Client.PostAsJsonAsync("v1/users", secondUser);
             user2 = await response.Content.ReadFromJsonAsync<UserModel>();
-            LogResponse("CREATE USER 2", response.StatusCode, $"UserId={user2!.Id}");
+            LogResponse(response, $"UserId={user2!.Id}");
 
             response.StatusCode.Should().Be(HttpStatusCode.Created);
             user2.Should().NotBeNull();
@@ -187,7 +187,7 @@ public class UserControllerTests : IntegrationTestBase
             };
 
             response = await Client.PutAsJsonAsync($"v1/users/{user2.Id}", updateUser);
-            LogResponse("UPDATE WITH DUPLICATE EXTERNAL ID", response.StatusCode, $"UserId={user2.Id}");
+            LogResponse(response, $"UserId={user2.Id}");
 
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
@@ -205,7 +205,7 @@ public class UserControllerTests : IntegrationTestBase
     {
         const int invalidUserId = 0;
         var response = await Client.GetAsync($"v1/users/{invalidUserId}");
-        LogResponse("GET WITH INVALID ID", response.StatusCode);
+        LogResponse(response);
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
@@ -220,7 +220,7 @@ public class UserControllerTests : IntegrationTestBase
         };
 
         var response = await Client.PutAsJsonAsync($"v1/users/{invalidUserId}", updateUser);
-        LogResponse("UPDATE WITH INVALID ID", response.StatusCode);
+        LogResponse(response);
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 }
