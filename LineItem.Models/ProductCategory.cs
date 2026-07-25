@@ -1,5 +1,7 @@
 using System;
 
+namespace LineItem.Models;
+
 /// <summary>
 ///     Represents a category used to organize products.
 /// </summary>
@@ -9,6 +11,11 @@ public class ProductCategory
     ///     Database Id.
     /// </summary>
     public long Id { get; set; }
+
+    /// <summary>
+    ///     Max length of a product category name.
+    /// </summary>
+    public static int MAX_NAME_LENGTH => 100;
 
     /// <summary>
     ///     Name of the category.
@@ -35,3 +42,13 @@ public class ProductCategory
     /// </summary>
     public long? UpdatedBy { get; set; }
 }
+
+/// <summary>
+///     Request object for creating a new product category.
+/// </summary>
+public record CreateProductCategoryRequest(string Name);
+
+/// <summary>
+///     Request object for updating a new product category.
+/// </summary>
+public record UpdateProductCategoryRequest(string Name);

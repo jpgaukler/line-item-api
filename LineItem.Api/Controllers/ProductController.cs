@@ -48,9 +48,9 @@ public class ProductController : ControllerBase
 
     [HttpGet("search")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> SearchAsync([FromQuery] string searchTerm, CancellationToken cancellationToken)
+    public async Task<IActionResult> SearchAsync([FromQuery] string searchText, CancellationToken cancellationToken)
     {
-        var result = await _productService.SearchAsync(searchTerm, cancellationToken);
+        var result = await _productService.SearchAsync(searchText, cancellationToken);
         return Ok(result);
     }
 

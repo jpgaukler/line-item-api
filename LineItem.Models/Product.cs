@@ -50,7 +50,7 @@ public class Product
     /// <summary>
     ///     Dictionary of product codes and their prices.
     /// </summary>
-    public ProductPriceDictionary? PriceDictionary { get; set; }
+    public ProductPriceDictionary PriceDictionary { get; set; } = new();
 }
 
 /// <summary>

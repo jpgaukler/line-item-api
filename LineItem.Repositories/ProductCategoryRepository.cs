@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
+using LineItem.Models;
 using LineItem.Repositories.Interfaces;
 using LineItem.Repositories.Options;
 using Microsoft.Extensions.Options;

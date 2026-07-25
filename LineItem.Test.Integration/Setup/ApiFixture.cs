@@ -73,12 +73,14 @@ public class ApiFixture : IAsyncLifetime
     {
         // hit /users/me to trigger user creation via middleware
         var response = await Client.GetAsync("v1/users/me");
+        response.EnsureSuccessStatusCode();
         var user = await response.Content.ReadFromJsonAsync<UserModel>();
         TestUserId = user!.Id;
     }
 
     private async Task CleanupTestUserAsync()
     {
-        await Client.DeleteAsync($"v1/users/{TestUserId}");
+        var response = await Client.DeleteAsync($"v1/users/{TestUserId}");
+        response.EnsureSuccessStatusCode();
     }
 }

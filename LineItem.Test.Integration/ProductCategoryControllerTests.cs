@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using FluentAssertions;
+using LineItem.Models;
 using LineItem.Test.Integration.Setup;
 using Xunit;
 using Xunit.Abstractions;
@@ -24,7 +25,7 @@ public class ProductCategoryControllerTests : IntegrationTestBase
         try
         {
             // CREATE
-            var newCategory = new ProductCategory { Name = "Test Category" };
+            var newCategory = new CreateProductCategoryRequest("Test Category");
             var response = await Client.PostAsJsonAsync("v1/product-categories", newCategory);
             category = await response.Content.ReadFromJsonAsync<ProductCategory>();
             LogResponse(response, $"CategoryId={category!.Id}");
@@ -65,7 +66,7 @@ public class ProductCategoryControllerTests : IntegrationTestBase
 
             // UPDATE
             var categoryId = category.Id;
-            var updatedCategory = new ProductCategory { Name = "Updated Test Category" };
+            var updatedCategory = new UpdateProductCategoryRequest("Updated Test Category");
             response = await Client.PutAsJsonAsync(
                 $"v1/product-categories/{categoryId}",
                 updatedCategory
@@ -104,8 +105,8 @@ public class ProductCategoryControllerTests : IntegrationTestBase
     [Fact]
     public async Task CreateCategory_WithEmptyName_ReturnsBadRequest()
     {
-        var invalidCategory = new ProductCategory { Name = string.Empty };
-        var response = await Client.PostAsJsonAsync("v1/product-categories", invalidCategory);
+        var request = new CreateProductCategoryRequest(string.Empty);
+        var response = await Client.PostAsJsonAsync("v1/product-categories", request);
         LogResponse(response);
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -113,8 +114,8 @@ public class ProductCategoryControllerTests : IntegrationTestBase
     [Fact]
     public async Task CreateCategory_WithNameExceedingMaxLength_ReturnsBadRequest()
     {
-        var invalidCategory = new ProductCategory { Name = new string('A', 101) };
-        var response = await Client.PostAsJsonAsync("v1/product-categories", invalidCategory);
+        var request = new CreateProductCategoryRequest(new string('A', 101));
+        var response = await Client.PostAsJsonAsync("v1/product-categories", request);
         LogResponse(response);
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -130,7 +131,7 @@ public class ProductCategoryControllerTests : IntegrationTestBase
             category = await CreateProductCategoryAsync();
 
             // UPDATE
-            var invalidCategory = new ProductCategory { Name = string.Empty };
+            var invalidCategory = new UpdateProductCategoryRequest(string.Empty);
             var response = await Client.PutAsJsonAsync(
                 $"v1/product-categories/{category.Id}",
                 invalidCategory
@@ -156,7 +157,7 @@ public class ProductCategoryControllerTests : IntegrationTestBase
             category = await CreateProductCategoryAsync();
 
             // UPDATE
-            var invalidCategory = new ProductCategory { Name = new string('A', 101) };
+            var invalidCategory = new UpdateProductCategoryRequest(new string('A', 101));
             var response = await Client.PutAsJsonAsync(
                 $"v1/product-categories/{category.Id}",
                 invalidCategory
@@ -184,7 +185,7 @@ public class ProductCategoryControllerTests : IntegrationTestBase
     public async Task UpdateCategory_WithInvalidId_ReturnsNotFound()
     {
         const long invalidCategoryId = 0;
-        var updatedCategory = new ProductCategory { Name = "Updated Category" };
+        var updatedCategory = new UpdateProductCategoryRequest("Updated Category");
         var response = await Client.PutAsJsonAsync(
             $"v1/product-categories/{invalidCategoryId}",
             updatedCategory

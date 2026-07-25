@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using LineItem.Exceptions;
+using LineItem.Models;
 using LineItem.Repositories.Interfaces;
 using LineItem.Services.Interfaces;
 
@@ -67,7 +68,8 @@ public class ProductCategoryService : IProductCategoryService
         if (string.IsNullOrWhiteSpace(category.Name))
             throw new ValidationException("Product category name is required.");
 
-        if (category.Name.Length > 100)
-            throw new ValidationException("Product category name can not exceed 100 characters.");
+        if (category.Name.Length > ProductCategory.MAX_NAME_LENGTH)
+            throw new ValidationException(
+                $"Product category name can not exceed {ProductCategory.MAX_NAME_LENGTH} characters.");
     }
 }
