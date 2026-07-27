@@ -1,21 +1,41 @@
 CREATE OR REPLACE FUNCTION lineitem.product_search(
   p_search_term VARCHAR
 )
-  RETURNS SETOF lineitem.product_version
+  RETURNS SETOF lineitem.product_active_version
 AS
 $$
 BEGIN
   RETURN QUERY
-    SELECT pv.*
-    FROM lineitem.product_version pv
-           INNER JOIN lineitem.product p
-                      ON p.id = pv.product_id
-                        AND p.active_version = pv.version
-    WHERE WORD_SIMILARITY(p_search_term, p.name) > 0.3
-       OR WORD_SIMILARITY(p_search_term, p.description) > 0.3
+    SELECT *
+    FROM lineitem.product_active_version pav
+    WHERE WORD_SIMILARITY(p_search_term, pav.name) > 0.3
+       OR WORD_SIMILARITY(p_search_term, pav.description) > 0.3
     ORDER BY GREATEST(
-                 WORD_SIMILARITY(p_search_term, p.name),
-                 WORD_SIMILARITY(p_search_term, p.description)
+                 WORD_SIMILARITY(p_search_term, pav.name),
+                 WORD_SIMILARITY(p_search_term, pav.description)
              ) DESC;
 END;
 $$ LANGUAGE plpgsql STABLE;
+
+
+-- TODO: DETERMINE IF THE INDEX IS GETTING PICKED UP ABOVE... MIGHT NEED TO TRY THIS ALTERNATE QUERY
+-- CREATE OR REPLACE FUNCTION lineitem.product_search(
+--   p_search_term VARCHAR
+-- )
+--   RETURNS SETOF lineitem.product_active_version
+-- AS
+-- $$
+-- BEGIN
+--   PERFORM SET_LIMIT(0.3); -- sets pg_trgm.word_similarity_threshold for this session/call
+-- 
+--   RETURN QUERY
+--     SELECT *
+--     FROM lineitem.product_active_version pav
+--     WHERE pav.name % p_search_term
+--        OR pav.description % p_search_term
+--     ORDER BY GREATEST(
+--                  WORD_SIMILARITY(p_search_term, pav.name),
+--                  WORD_SIMILARITY(p_search_term, pav.description)
+--              ) DESC;
+-- END;
+-- $$ LANGUAGE plpgsql STABLE;

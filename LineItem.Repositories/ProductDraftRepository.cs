@@ -201,8 +201,6 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
         await connection.ExecuteAsync(command);
     }
 
-    // --- Mapping ---
-
     private static ProductDraft MapDraft(ProductDraftRow row)
     {
         var productData = row.ProductData.ToProductData();

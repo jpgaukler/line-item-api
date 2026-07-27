@@ -16,6 +16,9 @@ public class ProductSchema : Migration
         Execute.Script(this.GetUpScript("tbl_product_version.sql"));
         Execute.Script(this.GetUpScript("tbl_product_draft.sql"));
 
+        // views
+        Execute.Script(this.GetUpScript("vw_product_active_version.sql"));
+
         // foreign keys
         Execute.Script(this.GetUpScript("fk_product_active_version.sql"));
 
@@ -48,10 +51,10 @@ public class ProductSchema : Migration
         Execute.Sql("DROP FUNCTION lineitem.product_category_retrieve_all()");
         Execute.Sql("DROP FUNCTION lineitem.product_category_update(BIGINT, VARCHAR, BIGINT)");
         Execute.Sql("DROP FUNCTION lineitem.product_category_delete(BIGINT)");
-        Execute.Sql("DROP FUNCTION lineitem.product_draft_insert(JSONB, BIGINT)");
+        Execute.Sql("DROP FUNCTION lineitem.product_draft_insert(BIGINT, JSONB, BIGINT)");
         Execute.Sql("DROP FUNCTION lineitem.product_draft_insert_from_product(BIGINT, BIGINT)");
         Execute.Sql("DROP FUNCTION lineitem.product_draft_retrieve_by_id(BIGINT)");
-        Execute.Sql("DROP FUNCTION lineitem.product_draft_update(BIGINT, JSONB, BIGINT)");
+        Execute.Sql("DROP FUNCTION lineitem.product_draft_update(BIGINT, BIGINT, JSONB, BIGINT)");
         Execute.Sql("DROP FUNCTION lineitem.product_draft_delete(BIGINT)");
         Execute.Sql("DROP FUNCTION lineitem.product_insert(BIGINT, VARCHAR, VARCHAR, BIGINT)");
         Execute.Sql("DROP FUNCTION lineitem.product_retrieve_active_version_by_id(BIGINT)");
@@ -64,6 +67,9 @@ public class ProductSchema : Migration
 
         // foreign keys
         Execute.Sql("ALTER TABLE lineitem.product DROP CONSTRAINT fk_product_active_version;");
+
+        // views
+        Execute.Sql("DROP VIEW lineitem.product_active_version");
 
         // tables
         Execute.Sql("DROP TABLE lineitem.product_draft");

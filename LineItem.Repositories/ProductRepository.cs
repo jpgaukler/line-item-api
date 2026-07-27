@@ -28,8 +28,9 @@ public class ProductRepository : RepositoryBase, IProductRepository
             new { id = productId },
             cancellationToken: cancellationToken);
 
-        var result = await connection.QuerySingleOrDefaultAsync<ProductVersionRow>(command);
-        return result?.ProductData.ToProduct();
+        var result = await connection.QuerySingleOrDefaultAsync<ProductActiveVersionRow>(command);
+
+        return result is null ? null : MapActiveVersion(result);
     }
 
     public async Task<Product?> RetrieveVersionByIdAsync(
@@ -51,7 +52,8 @@ public class ProductRepository : RepositoryBase, IProductRepository
             cancellationToken: cancellationToken);
 
         var result = await connection.QuerySingleOrDefaultAsync<ProductVersionRow>(command);
-        return result?.ProductData.ToProduct();
+
+        return result is null ? null : MapActiveVersion(result);
     }
 
     public async Task<IEnumerable<Product>> RetrieveByCategoryIdAsync(
@@ -67,8 +69,8 @@ public class ProductRepository : RepositoryBase, IProductRepository
             new { category_id = categoryId },
             cancellationToken: cancellationToken);
 
-        var results = await connection.QueryAsync<ProductVersionRow>(command);
-        return results.Select(r => r.ProductData.ToProduct());
+        var results = await connection.QueryAsync<ProductActiveVersionRow>(command);
+        return results.Select(MapActiveVersion);
     }
 
     public async Task<IEnumerable<Product>> SearchAsync(string searchTerm, CancellationToken cancellationToken)
@@ -81,8 +83,8 @@ public class ProductRepository : RepositoryBase, IProductRepository
             new { search_term = searchTerm },
             cancellationToken: cancellationToken);
 
-        var results = await connection.QueryAsync<ProductVersionRow>(command);
-        return results.Select(r => r.ProductData.ToProduct());
+        var results = await connection.QueryAsync<ProductActiveVersionRow>(command);
+        return results.Select(MapActiveVersion);
     }
 
     public async Task DeleteAsync(long id, CancellationToken cancellationToken)
@@ -96,5 +98,23 @@ public class ProductRepository : RepositoryBase, IProductRepository
             cancellationToken: cancellationToken);
 
         await connection.ExecuteAsync(command);
+    }
+
+    private static Product MapActiveVersion(ProductActiveVersionRow row)
+    {
+        var productData = row.ProductData.ToProductData();
+
+        return new Product
+        {
+            Id = row.Id,
+            Version = row.Version,
+            ProductCategoryId = row.ProductCategoryId,
+            Name = productData.Name,
+            Description = productData.Description,
+            ProductCodeFormula = productData.ProductCodeFormula,
+            Inputs = productData.Inputs,
+            Adders = productData.Adders,
+            PriceDictionary = productData.PriceDictionary
+        };
     }
 }
