@@ -16,10 +16,8 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
     {
     }
 
-    // --- Product Draft workflow ---
-
     public async Task<ProductDraft> CreateAsync(
-        Product product,
+        ProductDraft draft,
         long createdBy,
         CancellationToken cancellationToken
     )
@@ -28,10 +26,11 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
         await connection.OpenAsync(cancellationToken);
 
         var command = new CommandDefinition(
-            "SELECT * FROM lineitem.product_draft_insert(@product_data::jsonb, @created_by);",
+            "SELECT * FROM lineitem.product_draft_insert(@product_category_id, @product_data::jsonb, @created_by);",
             new
             {
-                product_data = product.ToJson(),
+                product_category_id = draft.ProductCategoryId,
+                product_data = draft.ToProductData().ToJson(),
                 created_by = createdBy
             },
             cancellationToken: cancellationToken);
@@ -64,7 +63,7 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
 
     public async Task UpdateAsync(
         long draftId,
-        Product product,
+        ProductDraft draft,
         long updatedBy,
         CancellationToken cancellationToken
     )
@@ -73,11 +72,12 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
         await connection.OpenAsync(cancellationToken);
 
         var command = new CommandDefinition(
-            "SELECT lineitem.product_draft_update(@id, @product_data::jsonb, @updated_by);",
+            "SELECT lineitem.product_draft_update(@id, @product_category_id, @product_data::jsonb, @updated_by);",
             new
             {
                 id = draftId,
-                product_data = product.ToJson(),
+                product_category_id = draft.ProductCategoryId,
+                product_data = draft.ToProductData().ToJson(),
                 updated_by = updatedBy
             },
             cancellationToken: cancellationToken);
@@ -120,9 +120,9 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
                     "SELECT * FROM lineitem.product_insert(@product_category_id, @name, @description, @created_by);",
                     new
                     {
-                        product_category_id = draft.Product.ProductCategoryId,
-                        name = draft.Product.Name,
-                        description = draft.Product.Description,
+                        product_category_id = draft.ProductCategoryId,
+                        name = draft.Name,
+                        description = draft.Description,
                         created_by = createdBy
                     },
                     transaction,
@@ -138,7 +138,7 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
                 new
                 {
                     product_id = baseProductId,
-                    product_data = draft.Product.ToJson(),
+                    product_data = draft.ToProductData().ToJson(),
                     created_by = createdBy
                 },
                 transaction,
@@ -167,7 +167,19 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
             await connection.ExecuteAsync(deleteDraftCommand);
 
             await transaction.CommitAsync(cancellationToken);
-            return productVersionRow.ProductData.ToProduct();
+
+            return new Product
+            {
+                Id = baseProductId.Value,
+                Version = productVersionRow.Version,
+                ProductCategoryId = draft.ProductCategoryId,
+                Name = draft.Name,
+                Description = draft.Description,
+                ProductCodeFormula = draft.ProductCodeFormula,
+                Inputs = draft.Inputs,
+                Adders = draft.Adders,
+                PriceDictionary = draft.PriceDictionary
+            };
         }
         catch
         {
@@ -193,16 +205,24 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
 
     private static ProductDraft MapDraft(ProductDraftRow row)
     {
+        var productData = row.ProductData.ToProductData();
+
         return new ProductDraft
         {
             Id = row.Id,
             BaseProductId = row.BaseProductId,
             BaseVersion = row.BaseVersion,
-            Product = row.ProductData.ToProduct(),
+            ProductCategoryId = row.ProductCategoryId,
             CreatedAt = row.CreatedAt,
             CreatedBy = row.CreatedBy,
             UpdatedAt = row.UpdatedAt,
-            UpdatedBy = row.UpdatedBy
+            UpdatedBy = row.UpdatedBy,
+            Name = productData.Name,
+            Description = productData.Description,
+            ProductCodeFormula = productData.ProductCodeFormula,
+            Inputs = productData.Inputs,
+            Adders = productData.Adders,
+            PriceDictionary = productData.PriceDictionary
         };
     }
 }

@@ -7,11 +7,13 @@ AS
 $$
 BEGIN
   RETURN QUERY
-    INSERT INTO lineitem.product_draft (base_product_id,
+    INSERT INTO lineitem.product_draft (product_category_id,
+                                        base_product_id,
                                         base_version,
                                         product_data,
                                         created_by)
-      SELECT p.id,
+      SELECT p.product_category_id,
+             p.id,
              p.active_version,
              pv.product_data,
              p_created_by

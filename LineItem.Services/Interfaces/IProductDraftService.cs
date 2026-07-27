@@ -6,13 +6,15 @@ namespace LineItem.Services.Interfaces;
 
 public interface IProductDraftService
 {
-    // --- Draft workflow ---
-
     /// <summary>
     ///     Creates a new draft for a new product.
     /// </summary>
     /// <returns>The created draft.</returns>
-    public Task<ProductDraft> CreateAsync(Product product, long createdBy, CancellationToken cancellationToken);
+    public Task<ProductDraft> CreateAsync(
+        ProductDraft draft,
+        long createdBy,
+        CancellationToken cancellationToken
+    );
 
     /// <summary>
     ///     Creates a draft branched from the active version of an existing published product.
@@ -27,7 +29,7 @@ public interface IProductDraftService
     /// <summary>
     ///     Updates an existing draft.
     /// </summary>
-    public Task UpdateAsync(long id, Product product, long updatedBy, CancellationToken cancellationToken);
+    public Task UpdateAsync(long id, ProductDraft draft, long updatedBy, CancellationToken cancellationToken);
 
     /// <summary>
     ///     Retrieves a draft by id.

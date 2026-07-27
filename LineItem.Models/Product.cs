@@ -3,9 +3,46 @@ using System.Collections.Generic;
 namespace LineItem.Models;
 
 /// <summary>
+///     Interface for the core data fields that make up a product definition.
+///     This is shared by Product and ProductDraft to maintain a consistent shape.
+/// </summary>
+public interface IProductData
+{
+    /// <summary>
+    ///     Name of the product.
+    /// </summary>
+    public string Name { get; }
+
+    /// <summary>
+    ///     Description of the product.
+    /// </summary>
+    public string Description { get; }
+
+    /// <summary>
+    ///     Formula used to generate the product code.
+    /// </summary>
+    public string ProductCodeFormula { get; }
+
+    /// <summary>
+    ///     Inputs that determine the form, fit, and functionality of the product.
+    /// </summary>
+    public List<ProductInput> Inputs { get; }
+
+    /// <summary>
+    ///     Optional adders that can be added to the product.
+    /// </summary>
+    public List<ProductAdder> Adders { get; }
+
+    /// <summary>
+    ///     Dictionary of product codes and their prices.
+    /// </summary>
+    public ProductPriceDictionary PriceDictionary { get; }
+}
+
+/// <summary>
 ///     Represents the definition of a product. This serves as a template for adding products to a quote.
 /// </summary>
-public class Product
+public class Product : IProductData
 {
     /// <summary>
     ///     Database Id.
@@ -18,38 +55,39 @@ public class Product
     public int Version { get; set; }
 
     /// <summary>
-    ///     Id of the product category which the product belongs to.
+    ///     Id of the product category that the product belongs to.
     /// </summary>
     public long ProductCategoryId { get; set; }
 
-    /// <summary>
-    ///     Name of the product.
-    /// </summary>
+    // UNSURE HOW I WANT TO HANDLE THIS
+
+    // /// <summary>
+    // ///     When the product was created.
+    // /// </summary>
+    // public DateTime CreatedAt { get; set; }
+    //
+    //
+    // /// <summary>
+    // ///     Id of the user who created the product.
+    // /// </summary>
+    // public long CreatedBy { get; set; }
+
+    /// <inheritdoc />
     public string Name { get; set; } = string.Empty;
 
-    /// <summary>
-    ///     Description of the product.
-    /// </summary>
+    /// <inheritdoc />
     public string Description { get; set; } = string.Empty;
 
-    /// <summary>
-    ///     Formula used to generate the product code.
-    /// </summary>
+    /// <inheritdoc />
     public string ProductCodeFormula { get; set; } = string.Empty;
 
-    /// <summary>
-    ///     Inputs that determine form, fit, and functionality of the product.
-    /// </summary>
+    /// <inheritdoc />
     public List<ProductInput> Inputs { get; set; } = [];
 
-    /// <summary>
-    ///     Optional adders that can be added to the product.
-    /// </summary>
+    /// <inheritdoc />
     public List<ProductAdder> Adders { get; set; } = [];
 
-    /// <summary>
-    ///     Dictionary of product codes and their prices.
-    /// </summary>
+    /// <inheritdoc />
     public ProductPriceDictionary PriceDictionary { get; set; } = new();
 }
 

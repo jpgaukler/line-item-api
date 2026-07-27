@@ -1,12 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using LineItem.Models;
+using LineItem.Repositories.Tables;
 
 namespace LineItem.Repositories.Helpers;
 
-/// <summary>
-///     Mapping class for the product_version table.
-/// </summary>
 internal static class ProductExtensions
 {
     private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -15,19 +13,51 @@ internal static class ProductExtensions
         Converters = { new JsonStringEnumConverter() }
     };
 
-    extension(string productJson)
+    extension(Product product)
     {
-        internal Product ToProduct()
+        internal ProductData ToProductData()
         {
-            return JsonSerializer.Deserialize<Product>(productJson, _jsonOptions)!;
+            return new ProductData
+            (
+                product.Name,
+                product.Description,
+                product.ProductCodeFormula,
+                product.Inputs,
+                product.Adders,
+                product.PriceDictionary
+            );
         }
     }
 
-    extension(Product product)
+    extension(ProductDraft productDraft)
+    {
+        internal ProductData ToProductData()
+        {
+            return new ProductData
+            (
+                productDraft.Name,
+                productDraft.Description,
+                productDraft.ProductCodeFormula,
+                productDraft.Inputs,
+                productDraft.Adders,
+                productDraft.PriceDictionary
+            );
+        }
+    }
+
+    extension(ProductData productData)
     {
         internal string ToJson()
         {
-            return JsonSerializer.Serialize(product, _jsonOptions);
+            return JsonSerializer.Serialize(productData, _jsonOptions);
+        }
+    }
+
+    extension(string json)
+    {
+        internal ProductData ToProductData()
+        {
+            return JsonSerializer.Deserialize<ProductData>(json, _jsonOptions)!;
         }
     }
 }

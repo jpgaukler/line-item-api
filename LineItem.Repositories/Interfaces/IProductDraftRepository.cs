@@ -10,7 +10,11 @@ public interface IProductDraftRepository
     ///     Creates a new draft for a new product.
     /// </summary>
     /// <returns>The created draft.</returns>
-    public Task<ProductDraft> CreateAsync(Product product, long createdBy, CancellationToken cancellationToken);
+    public Task<ProductDraft> CreateAsync(
+        ProductDraft draft,
+        long createdBy,
+        CancellationToken cancellationToken
+    );
 
     /// <summary>
     ///     Creates a draft branched from the active version of an existing published product.
@@ -23,9 +27,14 @@ public interface IProductDraftRepository
     );
 
     /// <summary>
-    ///     Overwrites the product_data on an existing draft row.
+    ///     Updates an existing draft.
     /// </summary>
-    public Task UpdateAsync(long draftId, Product product, long updatedBy, CancellationToken cancellationToken);
+    public Task UpdateAsync(
+        long draftId,
+        ProductDraft draft,
+        long updatedBy,
+        CancellationToken cancellationToken
+    );
 
     /// <summary>
     ///     Retrieves a product draft by id.

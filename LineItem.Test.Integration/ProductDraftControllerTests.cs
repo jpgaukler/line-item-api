@@ -38,13 +38,13 @@ public class ProductDraftControllerTests : IntegrationTestBase
             draft.Id.Should().BeGreaterThan(0);
             draft.BaseProductId.Should().BeNull();
             draft.BaseVersion.Should().BeNull();
-            draft.Product.Id.Should().Be(0);
-            draft.Product.Version.Should().Be(0);
-            draft.Product.ProductCategoryId.Should().Be(newProduct.ProductCategoryId);
-            draft.Product.Name.Should().Be(newProduct.Name);
-            draft.Product.Description.Should().Be(newProduct.Description);
-            draft.Product.Inputs.Should().BeEquivalentTo(newProduct.Inputs);
-            draft.Product.Adders.Should().BeEquivalentTo(newProduct.Adders);
+            draft.Id.Should().Be(0);
+            draft.Version.Should().Be(0);
+            draft.ProductCategoryId.Should().Be(newProduct.ProductCategoryId);
+            draft.Name.Should().Be(newProduct.Name);
+            draft.Description.Should().Be(newProduct.Description);
+            draft.Inputs.Should().BeEquivalentTo(newProduct.Inputs);
+            draft.Adders.Should().BeEquivalentTo(newProduct.Adders);
             draft.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
             draft.CreatedBy.Should().Be(TestUserId);
             draft.UpdatedAt.Should().BeNull();
@@ -60,13 +60,13 @@ public class ProductDraftControllerTests : IntegrationTestBase
             draft.Should().NotBeNull();
             draft.BaseProductId.Should().BeNull();
             draft.BaseVersion.Should().BeNull();
-            draft.Product.Id.Should().Be(0);
-            draft.Product.Version.Should().Be(0);
-            draft.Product.ProductCategoryId.Should().Be(newProduct.ProductCategoryId);
-            draft.Product.Name.Should().Be(newProduct.Name);
-            draft.Product.Description.Should().Be(newProduct.Description);
-            draft.Product.Inputs.Should().BeEquivalentTo(newProduct.Inputs);
-            draft.Product.Adders.Should().BeEquivalentTo(newProduct.Adders);
+            draft.Id.Should().Be(0);
+            draft.Version.Should().Be(0);
+            draft.ProductCategoryId.Should().Be(newProduct.ProductCategoryId);
+            draft.Name.Should().Be(newProduct.Name);
+            draft.Description.Should().Be(newProduct.Description);
+            draft.Inputs.Should().BeEquivalentTo(newProduct.Inputs);
+            draft.Adders.Should().BeEquivalentTo(newProduct.Adders);
             draft.CreatedAt.Should().Be(createdAt);
             draft.CreatedBy.Should().Be(TestUserId);
             draft.UpdatedAt.Should().BeNull();
@@ -98,13 +98,13 @@ public class ProductDraftControllerTests : IntegrationTestBase
             draft.Id.Should().BeGreaterThan(0);
             draft.BaseProductId.Should().BeNull();
             draft.BaseVersion.Should().BeNull();
-            draft.Product.Id.Should().Be(0);
-            draft.Product.Version.Should().Be(0);
-            draft.Product.ProductCategoryId.Should().Be(updatedProduct.ProductCategoryId);
-            draft.Product.Name.Should().Be(updatedProduct.Name);
-            draft.Product.Description.Should().Be(updatedProduct.Description);
-            draft.Product.Inputs.Should().BeEquivalentTo(updatedProduct.Inputs);
-            draft.Product.Adders.Should().BeEquivalentTo(updatedProduct.Adders);
+            draft.Id.Should().Be(0);
+            draft.Version.Should().Be(0);
+            draft.ProductCategoryId.Should().Be(updatedProduct.ProductCategoryId);
+            draft.Name.Should().Be(updatedProduct.Name);
+            draft.Description.Should().Be(updatedProduct.Description);
+            draft.Inputs.Should().BeEquivalentTo(updatedProduct.Inputs);
+            draft.Adders.Should().BeEquivalentTo(updatedProduct.Adders);
             draft.CreatedAt.Should().Be(createdAt);
             draft.CreatedBy.Should().Be(TestUserId);
             draft.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
@@ -153,11 +153,11 @@ public class ProductDraftControllerTests : IntegrationTestBase
             product.Should().NotBeNull();
             product.Id.Should().BeGreaterThan(0);
             product.Version.Should().Be(1);
-            product.ProductCategoryId.Should().Be(draft.Product.ProductCategoryId);
-            product.Name.Should().Be(draft.Product.Name);
-            product.Description.Should().Be(draft.Product.Description);
-            product.Inputs.Should().BeEquivalentTo(draft.Product.Inputs);
-            product.Adders.Should().BeEquivalentTo(draft.Product.Adders);
+            product.ProductCategoryId.Should().Be(draft.ProductCategoryId);
+            product.Name.Should().Be(draft.Name);
+            product.Description.Should().Be(draft.Description);
+            product.Inputs.Should().BeEquivalentTo(draft.Inputs);
+            product.Adders.Should().BeEquivalentTo(draft.Adders);
 
             // RETRIEVE (verify product exists)
             response = await Client.GetAsync($"v1/products/{product.Id}");
@@ -167,10 +167,10 @@ public class ProductDraftControllerTests : IntegrationTestBase
             retrievedProduct.Should().NotBeNull();
             retrievedProduct.Id.Should().Be(product.Id);
             retrievedProduct.Version.Should().Be(1);
-            retrievedProduct.ProductCategoryId.Should().Be(draft.Product.ProductCategoryId);
-            retrievedProduct.Description.Should().Be(draft.Product.Description);
-            retrievedProduct.Inputs.Should().BeEquivalentTo(draft.Product.Inputs);
-            retrievedProduct.Adders.Should().BeEquivalentTo(draft.Product.Adders);
+            retrievedProduct.ProductCategoryId.Should().Be(draft.ProductCategoryId);
+            retrievedProduct.Description.Should().Be(draft.Description);
+            retrievedProduct.Inputs.Should().BeEquivalentTo(draft.Inputs);
+            retrievedProduct.Adders.Should().BeEquivalentTo(draft.Adders);
 
             // VERIFY DRAFT DELETED
             response = await Client.GetAsync($"v1/product-drafts/{draft.Id}");
@@ -218,11 +218,11 @@ public class ProductDraftControllerTests : IntegrationTestBase
             productDraft2.Id.Should().BeGreaterThan(0);
             productDraft2.BaseProductId.Should().Be(product.Id);
             productDraft2.BaseVersion.Should().Be(1);
-            productDraft2.Product.ProductCategoryId.Should().Be(product.ProductCategoryId);
-            productDraft2.Product.Name.Should().Be(product.Name);
-            productDraft2.Product.Description.Should().Be(product.Description);
-            productDraft2.Product.Inputs.Should().BeEquivalentTo(product.Inputs);
-            productDraft2.Product.Adders.Should().BeEquivalentTo(product.Adders);
+            productDraft2.ProductCategoryId.Should().Be(product.ProductCategoryId);
+            productDraft2.Name.Should().Be(product.Name);
+            productDraft2.Description.Should().Be(product.Description);
+            productDraft2.Inputs.Should().BeEquivalentTo(product.Inputs);
+            productDraft2.Adders.Should().BeEquivalentTo(product.Adders);
 
             // UPDATE DRAFT
             var updatedProduct = productDraft2.Product;

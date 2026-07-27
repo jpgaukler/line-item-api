@@ -1,5 +1,6 @@
 CREATE OR REPLACE FUNCTION lineitem.product_draft_update(
   p_id BIGINT,
+  p_product_category_id BIGINT,
   p_product_data JSONB,
   p_updated_by BIGINT
 )
@@ -8,8 +9,9 @@ AS
 $$
 BEGIN
   UPDATE lineitem.product_draft
-  SET product_data = p_product_data,
-      updated_by   = p_updated_by
+  SET product_category_id = p_product_category_id,
+      product_data        = p_product_data,
+      updated_by          = p_updated_by
   WHERE id = p_id;
 END;
 $$ LANGUAGE plpgsql;

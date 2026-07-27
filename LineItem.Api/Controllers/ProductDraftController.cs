@@ -23,11 +23,26 @@ public class ProductDraftController : ControllerBase
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     public async Task<IActionResult> CreateAsync(
-        [FromBody] Product product,
+        [FromBody] CreateProductDraftRequest request,
         CancellationToken cancellationToken
     )
     {
-        var draft = await _productDraftService.CreateAsync(product, HttpContext.GetUserId(), cancellationToken);
+        var productDraft = new ProductDraft
+        {
+            ProductCategoryId = request.ProductCategoryId,
+            Name = request.Name,
+            Description = request.Description,
+            ProductCodeFormula = request.ProductCodeFormula,
+            Inputs = request.Inputs,
+            Adders = request.Adders,
+            PriceDictionary = request.PriceDictionary
+        };
+
+        var draft = await _productDraftService.CreateAsync(
+            productDraft,
+            HttpContext.GetUserId(),
+            cancellationToken);
+
         return CreatedAtAction(nameof(GetByIdAsync), new { version = "1", id = draft.Id }, draft);
     }
 
@@ -41,8 +56,11 @@ public class ProductDraftController : ControllerBase
     {
         try
         {
-            var draft = await _productDraftService.CreateFromProductAsync(productId, HttpContext.GetUserId(),
+            var draft = await _productDraftService.CreateFromProductAsync(
+                productId,
+                HttpContext.GetUserId(),
                 cancellationToken);
+
             return CreatedAtAction(nameof(GetByIdAsync), new { version = "1", id = draft.Id }, draft);
         }
         catch (NotFoundException ex)
@@ -68,13 +86,13 @@ public class ProductDraftController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateAsync(
         [FromRoute] long id,
-        [FromBody] Product product,
+        [FromBody] ProductDraft productDraft,
         CancellationToken cancellationToken
     )
     {
         try
         {
-            await _productDraftService.UpdateAsync(id, product, HttpContext.GetUserId(), cancellationToken);
+            await _productDraftService.UpdateAsync(id, productDraft, HttpContext.GetUserId(), cancellationToken);
             return Ok();
         }
         catch (NotFoundException ex)

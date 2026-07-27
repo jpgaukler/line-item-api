@@ -28,9 +28,13 @@ public class ProductDraftService : IProductDraftService
         _productCategoryRepository = productCategoryRepository;
     }
 
-    public Task<ProductDraft> CreateAsync(Product product, long createdBy, CancellationToken cancellationToken)
+    public Task<ProductDraft> CreateAsync(
+        ProductDraft draft,
+        long createdBy,
+        CancellationToken cancellationToken
+    )
     {
-        return _productDraftRepository.CreateAsync(product, createdBy, cancellationToken);
+        return _productDraftRepository.CreateAsync(draft, createdBy, cancellationToken);
     }
 
     public async Task<ProductDraft> CreateFromProductAsync(
@@ -52,7 +56,7 @@ public class ProductDraftService : IProductDraftService
 
     public async Task UpdateAsync(
         long draftId,
-        Product product,
+        ProductDraft draft,
         long updatedBy,
         CancellationToken cancellationToken
     )
@@ -60,7 +64,7 @@ public class ProductDraftService : IProductDraftService
         if (await _productDraftRepository.RetrieveByIdAsync(draftId, cancellationToken) is null)
             throw new NotFoundException($"Draft with id {draftId} not found.");
 
-        await _productDraftRepository.UpdateAsync(draftId, product, updatedBy, cancellationToken);
+        await _productDraftRepository.UpdateAsync(draftId, draft, updatedBy, cancellationToken);
     }
 
     public Task<ProductDraft?> RetrieveByIdAsync(long draftId, CancellationToken cancellationToken)
@@ -79,9 +83,10 @@ public class ProductDraftService : IProductDraftService
         var draft = await _productDraftRepository.RetrieveByIdAsync(draftId, cancellationToken)
                     ?? throw new NotFoundException($"Draft with id {draftId} not found.");
 
-        await ValidateProductAsync(draft.Product, cancellationToken);
+        await ValidateProductDraftAsync(draft, cancellationToken);
 
         var product = await _productDraftRepository.PublishAsync(draft, createdBy, cancellationToken);
+
         return product;
     }
 
@@ -91,31 +96,29 @@ public class ProductDraftService : IProductDraftService
     }
 
 
-    // --- Validators ---
-
-    private async Task ValidateProductAsync(Product product, CancellationToken cancellationToken)
+    private async Task ValidateProductDraftAsync(ProductDraft draft, CancellationToken cancellationToken)
     {
         var errors = new List<string>();
 
         // Category
-        var category = await _productCategoryRepository.RetrieveByIdAsync(product.ProductCategoryId, cancellationToken);
+        var category = await _productCategoryRepository.RetrieveByIdAsync(draft.ProductCategoryId, cancellationToken);
         if (category is null)
-            errors.Add($"Product category with id {product.ProductCategoryId} does not exist.");
+            errors.Add($"Product category with id {draft.ProductCategoryId} does not exist.");
 
         // Name
-        if (string.IsNullOrWhiteSpace(product.Name))
+        if (string.IsNullOrWhiteSpace(draft.Name))
             errors.Add("Product name is required.");
-        else if (product.Name.Length > 100)
+        else if (draft.Name.Length > 100)
             errors.Add("Product name can not exceed 100 characters.");
 
         // Description
-        if (string.IsNullOrWhiteSpace(product.Description))
+        if (string.IsNullOrWhiteSpace(draft.Description))
             errors.Add("Product description is required.");
-        else if (product.Description.Length > 500)
+        else if (draft.Description.Length > 500)
             errors.Add("Product description must be 500 characters or less.");
 
         // Inputs
-        var duplicateInputNames = product.Inputs
+        var duplicateInputNames = draft.Inputs
             .GroupBy(i => i.Name, StringComparer.OrdinalIgnoreCase)
             .Where(g => g.Count() > 1)
             .Select(g => g.Key)
@@ -124,7 +127,7 @@ public class ProductDraftService : IProductDraftService
         if (duplicateInputNames.Count > 0)
             errors.Add($"Product inputs contain duplicate names: {string.Join(", ", duplicateInputNames)}.");
 
-        foreach (var input in product.Inputs)
+        foreach (var input in draft.Inputs)
         {
             if (input.DefaultOptionIndex < 0 || input.DefaultOptionIndex >= input.Options.Length)
                 errors.Add($"Input '{input.Name}' default option index {input.DefaultOptionIndex} is out of range.");
@@ -146,7 +149,7 @@ public class ProductDraftService : IProductDraftService
         }
 
         // Adders
-        var duplicateAdderNames = product.Adders
+        var duplicateAdderNames = draft.Adders
             .GroupBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
             .Where(g => g.Count() > 1)
             .Select(g => g.Key)
@@ -155,7 +158,7 @@ public class ProductDraftService : IProductDraftService
         if (duplicateAdderNames.Count > 0)
             errors.Add($"Product adders contain duplicate names: {string.Join(", ", duplicateAdderNames)}.");
 
-        foreach (var adder in product.Adders)
+        foreach (var adder in draft.Adders)
         {
             if (adder.DefaultOptionIndex < 0 || adder.DefaultOptionIndex >= adder.Options.Length)
                 errors.Add($"Adder '{adder.Name}' default option index {adder.DefaultOptionIndex} is out of range.");
