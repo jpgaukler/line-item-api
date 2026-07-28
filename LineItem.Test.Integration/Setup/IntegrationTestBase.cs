@@ -46,8 +46,8 @@ public abstract class IntegrationTestBase
 
     protected async Task<ProductCategory> CreateProductCategoryAsync(string name = "Test Category")
     {
-        var category = new ProductCategory { Name = name };
-        var response = await Client.PostAsJsonAsync("v1/product-categories", category);
+        var request = new CreateProductCategoryRequest(name);
+        var response = await Client.PostAsJsonAsync("v1/product-categories", request);
         var created = await response.Content.ReadFromJsonAsync<ProductCategory>();
         LogResponse(response, $"(setup) CategoryId={created!.Id}");
         return created;
@@ -56,12 +56,12 @@ public abstract class IntegrationTestBase
     protected async Task CleanupProductCategoryAsync(long categoryId)
     {
         var response = await Client.DeleteAsync($"v1/product-categories/{categoryId}");
-        LogResponse(response, $"(cleanup) CategoryId={categoryId}");
+        LogResponse(response, "(cleanup)");
     }
 
-    protected async Task<ProductDraft> CreateProductDraftAsync(Product product)
+    protected async Task<ProductDraft> CreateProductDraftAsync(CreateProductDraftRequest request)
     {
-        var response = await Client.PostAsJsonAsync("v1/product-drafts", product);
+        var response = await Client.PostAsJsonAsync("v1/product-drafts", request);
         var draft = await response.Content.ReadFromJsonAsync<ProductDraft>();
         LogResponse(response, $"(setup) DraftId={draft!.Id}");
         return draft;
@@ -78,12 +78,12 @@ public abstract class IntegrationTestBase
     protected async Task CleanupProductDraftAsync(long draftId)
     {
         var response = await Client.DeleteAsync($"v1/product-drafts/{draftId}");
-        LogResponse(response, $"(cleanup) DraftId={draftId}");
+        LogResponse(response, "(cleanup)");
     }
 
     protected async Task CleanupProductAsync(long productId)
     {
         var response = await Client.DeleteAsync($"v1/products/{productId}");
-        LogResponse(response, $"(cleanup) ProductId={productId}");
+        LogResponse(response, "(cleanup)");
     }
 }

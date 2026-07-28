@@ -201,7 +201,7 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
 
     private static ProductDraft MapProductDraftRow(ProductDraftRow row)
     {
-        var productData = row.ProductData.ToProductData();
+        var productData = row.ProductDataJson.ToProductData();
 
         return new ProductDraft
         {
@@ -243,7 +243,7 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
         long? BaseProductId,
         int? BaseVersion,
         long ProductCategoryId,
-        string ProductData,
+        string ProductDataJson,
         DateTime CreatedAt,
         long CreatedBy,
         DateTime? UpdatedAt,
@@ -269,7 +269,7 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
     private record ProductVersionRow(
         long ProductId,
         int Version,
-        string ProductData,
+        string ProductDataJson,
         DateTime CreatedAt,
         long CreatedBy);
 }

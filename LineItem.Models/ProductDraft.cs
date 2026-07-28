@@ -80,3 +80,16 @@ public record CreateProductDraftRequest(
     List<ProductAdder> Adders,
     ProductPriceDictionary PriceDictionary
 ) : IProductData;
+
+/// <summary>
+///     Represents a request to update a ProductDraft.
+/// </summary>
+public record UpdateProductDraftRequest(
+    long ProductCategoryId,
+    string Name,
+    string Description,
+    string ProductCodeFormula,
+    List<ProductInput> Inputs,
+    List<ProductAdder> Adders,
+    ProductPriceDictionary PriceDictionary
+) : IProductData;

@@ -26,8 +26,8 @@ public class ProductDraftControllerTests : IntegrationTestBase
         try
         {
             // CREATE
-            var newProduct = ProductBuilder.Default().Build();
-            var response = await Client.PostAsJsonAsync("v1/product-drafts", newProduct);
+            var request = ProductDraftBuilder.Default().BuildCreateRequest();
+            var response = await Client.PostAsJsonAsync("v1/product-drafts", request);
             draft = await response.Content.ReadFromJsonAsync<ProductDraft>();
             LogResponse(response, $"DraftId={draft!.Id}");
             // LogJson(draft);
@@ -38,13 +38,11 @@ public class ProductDraftControllerTests : IntegrationTestBase
             draft.Id.Should().BeGreaterThan(0);
             draft.BaseProductId.Should().BeNull();
             draft.BaseVersion.Should().BeNull();
-            draft.Id.Should().Be(0);
-            draft.Version.Should().Be(0);
-            draft.ProductCategoryId.Should().Be(newProduct.ProductCategoryId);
-            draft.Name.Should().Be(newProduct.Name);
-            draft.Description.Should().Be(newProduct.Description);
-            draft.Inputs.Should().BeEquivalentTo(newProduct.Inputs);
-            draft.Adders.Should().BeEquivalentTo(newProduct.Adders);
+            draft.ProductCategoryId.Should().Be(request.ProductCategoryId);
+            draft.Name.Should().Be(request.Name);
+            draft.Description.Should().Be(request.Description);
+            draft.Inputs.Should().BeEquivalentTo(request.Inputs);
+            draft.Adders.Should().BeEquivalentTo(request.Adders);
             draft.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
             draft.CreatedBy.Should().Be(TestUserId);
             draft.UpdatedAt.Should().BeNull();
@@ -60,13 +58,11 @@ public class ProductDraftControllerTests : IntegrationTestBase
             draft.Should().NotBeNull();
             draft.BaseProductId.Should().BeNull();
             draft.BaseVersion.Should().BeNull();
-            draft.Id.Should().Be(0);
-            draft.Version.Should().Be(0);
-            draft.ProductCategoryId.Should().Be(newProduct.ProductCategoryId);
-            draft.Name.Should().Be(newProduct.Name);
-            draft.Description.Should().Be(newProduct.Description);
-            draft.Inputs.Should().BeEquivalentTo(newProduct.Inputs);
-            draft.Adders.Should().BeEquivalentTo(newProduct.Adders);
+            draft.ProductCategoryId.Should().Be(request.ProductCategoryId);
+            draft.Name.Should().Be(request.Name);
+            draft.Description.Should().Be(request.Description);
+            draft.Inputs.Should().BeEquivalentTo(request.Inputs);
+            draft.Adders.Should().BeEquivalentTo(request.Adders);
             draft.CreatedAt.Should().Be(createdAt);
             draft.CreatedBy.Should().Be(TestUserId);
             draft.UpdatedAt.Should().BeNull();
@@ -74,19 +70,19 @@ public class ProductDraftControllerTests : IntegrationTestBase
 
             // UPDATE
             var draftId = draft.Id;
-            var updatedProduct = ProductBuilder.Default()
+            var updatedProduct = ProductDraftBuilder.Default()
                 .WithName("Updated name")
                 .WithDescription("Updated description")
                 .WithProductCodeFormula("=MAT{Material}")
                 .WithInput("Material", ["Carbon steel|CS", "Stainless steel|SS"])
                 .WithAdder("Level Sensor", [("High level", 100), ("Low level", 100)])
-                .Build();
+                .BuildCreateRequest();
             response = await Client.PutAsJsonAsync(
                 $"v1/product-drafts/{draftId}",
                 updatedProduct
             );
             LogResponse(response);
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
             // RETRIEVE (verify update)
             response = await Client.GetAsync($"v1/product-drafts/{draftId}");
@@ -98,8 +94,6 @@ public class ProductDraftControllerTests : IntegrationTestBase
             draft.Id.Should().BeGreaterThan(0);
             draft.BaseProductId.Should().BeNull();
             draft.BaseVersion.Should().BeNull();
-            draft.Id.Should().Be(0);
-            draft.Version.Should().Be(0);
             draft.ProductCategoryId.Should().Be(updatedProduct.ProductCategoryId);
             draft.Name.Should().Be(updatedProduct.Name);
             draft.Description.Should().Be(updatedProduct.Description);
@@ -138,18 +132,17 @@ public class ProductDraftControllerTests : IntegrationTestBase
         {
             // SETUP
             productCategory = await CreateProductCategoryAsync();
-            draft = await CreateProductDraftAsync(
-                ProductBuilder.Default()
-                    .WithCategoryId(productCategory.Id)
-                    .Build()
-            );
+            var request = ProductDraftBuilder.Default()
+                .WithCategoryId(productCategory.Id)
+                .BuildCreateRequest();
+            draft = await CreateProductDraftAsync(request);
 
             // PUBLISH
             var response =
                 await Client.PostAsync($"v1/product-drafts/{draft.Id}/publish", null);
             LogResponse(response);
             product = await response.Content.ReadFromJsonAsync<Product>();
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.StatusCode.Should().Be(HttpStatusCode.Created);
             product.Should().NotBeNull();
             product.Id.Should().BeGreaterThan(0);
             product.Version.Should().Be(1);
@@ -160,7 +153,7 @@ public class ProductDraftControllerTests : IntegrationTestBase
             product.Adders.Should().BeEquivalentTo(draft.Adders);
 
             // RETRIEVE (verify product exists)
-            response = await Client.GetAsync($"v1/products/{product.Id}");
+            response = await Client.GetAsync(response.Headers.Location);
             LogResponse(response);
             var retrievedProduct = await response.Content.ReadFromJsonAsync<Product>();
             response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -201,11 +194,10 @@ public class ProductDraftControllerTests : IntegrationTestBase
         {
             // SETUP 
             productCategory = await CreateProductCategoryAsync();
-            productDraft1 = await CreateProductDraftAsync(
-                ProductBuilder.Default()
-                    .WithCategoryId(productCategory.Id)
-                    .Build()
-            );
+            var createRequest = ProductDraftBuilder.Default()
+                .WithCategoryId(productCategory.Id)
+                .BuildCreateRequest();
+            productDraft1 = await CreateProductDraftAsync(createRequest);
             product = await PublishProductDraftAsync(productDraft1.Id);
 
             // CREATE DRAFT FROM PRODUCT
@@ -225,23 +217,25 @@ public class ProductDraftControllerTests : IntegrationTestBase
             productDraft2.Adders.Should().BeEquivalentTo(product.Adders);
 
             // UPDATE DRAFT
-            var updatedProduct = productDraft2.Product;
-            updatedProduct.Name = "Updated Product Name";
+            var updateRequest = ProductDraftBuilder.Default()
+                .WithName("Updated Product Name")
+                .WithCategoryId(productCategory.Id)
+                .BuildUpdateRequest();
             response = await Client.PutAsJsonAsync(
                 $"v1/product-drafts/{productDraft2.Id}",
-                updatedProduct
+                updateRequest
             );
             LogResponse(response);
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
             // PUBLISH UPDATED DRAFT 
             response = await Client.PostAsync($"v1/product-drafts/{productDraft2.Id}/publish", null);
             LogResponse(response);
-            var publishedProduct = await response.Content.ReadFromJsonAsync<Product>();
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
-            publishedProduct.Should().NotBeNull();
-            publishedProduct.Name.Should().Be("Updated Product Name");
-            publishedProduct.Version.Should().Be(2);
+            var updatedProduct = await response.Content.ReadFromJsonAsync<Product>();
+            response.StatusCode.Should().Be(HttpStatusCode.Created);
+            updatedProduct.Should().NotBeNull();
+            updatedProduct.Name.Should().Be("Updated Product Name");
+            updatedProduct.Version.Should().Be(2);
 
             // VERIFY VERSION HISTORY
             response = await Client.GetAsync($"v1/products/{product.Id}");
@@ -250,6 +244,7 @@ public class ProductDraftControllerTests : IntegrationTestBase
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             activeVersion.Should().NotBeNull();
             activeVersion.Name.Should().Be(updatedProduct.Name);
+            activeVersion.Version.Should().Be(2);
 
             response = await Client.GetAsync($"v1/products/{product.Id}/versions/1");
             LogResponse(response);
@@ -257,6 +252,7 @@ public class ProductDraftControllerTests : IntegrationTestBase
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             version1.Should().NotBeNull();
             version1.Name.Should().Be(product.Name);
+            version1.Version.Should().Be(1);
 
             response = await Client.GetAsync($"v1/products/{product.Id}/versions/2");
             LogResponse(response);
@@ -264,6 +260,7 @@ public class ProductDraftControllerTests : IntegrationTestBase
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             version2.Should().NotBeNull();
             version2.Name.Should().Be(updatedProduct.Name);
+            version2.Version.Should().Be(2);
         }
         finally
         {
@@ -286,7 +283,7 @@ public class ProductDraftControllerTests : IntegrationTestBase
         try
         {
             // SETUP - build a product that violates every validation rule
-            var invalidProduct = ProductBuilder.Default()
+            var invalidProduct = ProductDraftBuilder.Default()
                 .WithName(string.Empty)
                 .WithDescription(string.Empty)
                 .WithCategoryId(0)
@@ -300,7 +297,7 @@ public class ProductDraftControllerTests : IntegrationTestBase
                 .WithAdder("DefaultAdderIndexOutOfRange", [("Standard", 50)], false, 999)
                 .WithAdder("NegativeAdderPrice", [("Standard", -50)])
                 .WithAdder("AdderMissingDisplayText", [(string.Empty, 50)], false, 999)
-                .Build();
+                .BuildCreateRequest();
 
             draft = await CreateProductDraftAsync(invalidProduct);
 

@@ -72,7 +72,7 @@ public class ProductCategoryControllerTests : IntegrationTestBase
                 updatedCategory
             );
             category = await response.Content.ReadFromJsonAsync<ProductCategory>();
-            LogResponse(response, $"CategoryId={categoryId}");
+            LogResponse(response);
             // LogJson(category);
             response.StatusCode.Should().Be(HttpStatusCode.OK);
             category.Should().NotBeNull();
@@ -86,7 +86,7 @@ public class ProductCategoryControllerTests : IntegrationTestBase
 
             // DELETE
             response = await Client.DeleteAsync($"v1/product-categories/{categoryId}");
-            LogResponse(response, $"CategoryId={categoryId}");
+            LogResponse(response);
             response.StatusCode.Should().Be(HttpStatusCode.NoContent);
             category = null;
 
@@ -136,7 +136,7 @@ public class ProductCategoryControllerTests : IntegrationTestBase
                 $"v1/product-categories/{category.Id}",
                 invalidCategory
             );
-            LogResponse(response, $"CategoryId={category.Id}");
+            LogResponse(response);
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
         finally
@@ -162,7 +162,7 @@ public class ProductCategoryControllerTests : IntegrationTestBase
                 $"v1/product-categories/{category.Id}",
                 invalidCategory
             );
-            LogResponse(response, $"CategoryId={category.Id}");
+            LogResponse(response);
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
         finally

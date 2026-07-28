@@ -102,7 +102,7 @@ public class ProductRepository : RepositoryBase, IProductRepository
 
     internal static Product MapProductVersionDetailRow(ProductVersionDetailRow row)
     {
-        var productData = row.ProductData.ToProductData();
+        var productData = row.ProductDataJson.ToProductData();
 
         return new Product
         {
@@ -130,7 +130,7 @@ public class ProductRepository : RepositoryBase, IProductRepository
         string Description,
         int ActiveVersion,
         int Version,
-        string ProductData,
+        string ProductDataJson,
         DateTime CreatedAt,
         long CreatedBy);
 }

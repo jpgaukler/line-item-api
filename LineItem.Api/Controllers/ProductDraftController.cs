@@ -86,12 +86,23 @@ public class ProductDraftController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateAsync(
         [FromRoute] long id,
-        [FromBody] ProductDraft productDraft,
+        [FromBody] UpdateProductDraftRequest request,
         CancellationToken cancellationToken
     )
     {
         try
         {
+            var productDraft = new ProductDraft
+            {
+                ProductCategoryId = request.ProductCategoryId,
+                Name = request.Name,
+                Description = request.Description,
+                ProductCodeFormula = request.ProductCodeFormula,
+                Inputs = request.Inputs,
+                Adders = request.Adders,
+                PriceDictionary = request.PriceDictionary
+            };
+
             await _productDraftService.UpdateAsync(id, productDraft, HttpContext.GetUserId(), cancellationToken);
             return NoContent();
         }

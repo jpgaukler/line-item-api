@@ -5,21 +5,21 @@ using LineItem.Models;
 namespace LineItem.Test.Integration.Builders;
 
 /// <summary>
-///     Helper class for building test products. Default provides a basic test product, and allows customization by
-///     chaining methods.
+///     Helper class for building test ProductDrafts. Default provides a simple baseline,
+///     and allows customization by chaining methods.
 /// </summary>
-public class ProductBuilder
+public class ProductDraftBuilder
 {
     private readonly List<ProductAdder> _adders = [];
     private readonly List<ProductInput> _inputs = [];
     private string _description = "A test product description.";
     private string _name = "Test Product";
-    private long _productCategoryId = 1;
+    private long _productCategoryId;
     private string _productCodeFormula = "=W{Width}-H{Height}";
 
-    public static ProductBuilder Default()
+    public static ProductDraftBuilder Default()
     {
-        return new ProductBuilder()
+        return new ProductDraftBuilder()
             .WithInput("Width", ["24 inches|24", "36 inches|36", "48 inches|48", "60 inches|60", "72 inches|72"])
             .WithInput("Height", ["48 inches|48", "60 inches|60", "72 inches|72", "84 inches|84", "96 inches|96"])
             .WithInput("Color", ["White|white", "Bronze|bronze", "Black|black", "Tan|tan"])
@@ -28,31 +28,31 @@ public class ProductBuilder
             .WithAdder("Tempered Glass Upgrade", [("None", 0), ("Tempered", 150)]);
     }
 
-    public ProductBuilder WithName(string name)
+    public ProductDraftBuilder WithName(string name)
     {
         _name = name;
         return this;
     }
 
-    public ProductBuilder WithDescription(string description)
+    public ProductDraftBuilder WithDescription(string description)
     {
         _description = description;
         return this;
     }
 
-    public ProductBuilder WithCategoryId(long categoryId)
+    public ProductDraftBuilder WithCategoryId(long categoryId)
     {
         _productCategoryId = categoryId;
         return this;
     }
 
-    public ProductBuilder WithProductCodeFormula(string formula)
+    public ProductDraftBuilder WithProductCodeFormula(string formula)
     {
         _productCodeFormula = formula;
         return this;
     }
 
-    public ProductBuilder WithInput(string name, string[] options, bool allowCustom = false, int defaultIndex = 0)
+    public ProductDraftBuilder WithInput(string name, string[] options, bool allowCustom = false, int defaultIndex = 0)
     {
         _inputs.Add(new ProductInput
         {
@@ -72,7 +72,7 @@ public class ProductBuilder
         return this;
     }
 
-    public ProductBuilder WithAdder(
+    public ProductDraftBuilder WithAdder(
         string name,
         (string displayText, int price)[] options,
         bool allowCustom = false,
@@ -93,28 +93,41 @@ public class ProductBuilder
         return this;
     }
 
-    public ProductBuilder WithoutInputs()
+    public ProductDraftBuilder WithoutInputs()
     {
         _inputs.Clear();
         return this;
     }
 
-    public ProductBuilder WithoutAdders()
+    public ProductDraftBuilder WithoutAdders()
     {
         _adders.Clear();
         return this;
     }
 
-    public Product Build()
+    public CreateProductDraftRequest BuildCreateRequest()
     {
-        return new Product
-        {
-            ProductCategoryId = _productCategoryId,
-            Name = _name,
-            Description = _description,
-            ProductCodeFormula = _productCodeFormula,
-            Inputs = _inputs,
-            Adders = _adders
-        };
+        return new CreateProductDraftRequest(
+            _productCategoryId,
+            _name,
+            _description,
+            _productCodeFormula,
+            _inputs,
+            _adders,
+            new ProductPriceDictionary()
+        );
+    }
+
+    public UpdateProductDraftRequest BuildUpdateRequest()
+    {
+        return new UpdateProductDraftRequest(
+            _productCategoryId,
+            _name,
+            _description,
+            _productCodeFormula,
+            _inputs,
+            _adders,
+            new ProductPriceDictionary()
+        );
     }
 }
