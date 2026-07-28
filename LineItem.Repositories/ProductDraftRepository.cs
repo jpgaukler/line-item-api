@@ -26,11 +26,11 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
         await connection.OpenAsync(cancellationToken);
 
         var command = new CommandDefinition(
-            "SELECT * FROM lineitem.product_draft_insert(@product_category_id, @product_data::jsonb, @created_by);",
+            "SELECT * FROM lineitem.product_draft_insert(@product_category_id, @product_data_json::jsonb, @created_by);",
             new
             {
                 product_category_id = draft.ProductCategoryId,
-                product_data = MapProductData(draft).ToJson(),
+                product_data_json = MapProductData(draft).ToJson(),
                 created_by = createdBy
             },
             cancellationToken: cancellationToken);
@@ -72,12 +72,12 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
         await connection.OpenAsync(cancellationToken);
 
         var command = new CommandDefinition(
-            "SELECT lineitem.product_draft_update(@id, @product_category_id, @product_data::jsonb, @updated_by);",
+            "SELECT lineitem.product_draft_update(@id, @product_category_id, @product_data_json::jsonb, @updated_by);",
             new
             {
                 id = draftId,
                 product_category_id = draft.ProductCategoryId,
-                product_data = MapProductData(draft).ToJson(),
+                product_data_json = MapProductData(draft).ToJson(),
                 updated_by = updatedBy
             },
             cancellationToken: cancellationToken);
@@ -134,11 +134,11 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
 
             // insert product version row
             var insertVersionCommand = new CommandDefinition(
-                "SELECT * FROM lineitem.product_version_insert(@product_id, @product_data::jsonb, @created_by);",
+                "SELECT * FROM lineitem.product_version_insert(@product_id, @product_data_json::jsonb, @created_by);",
                 new
                 {
                     product_id = baseProductId,
-                    product_data = MapProductData(draft).ToJson(),
+                    product_data_json = MapProductData(draft).ToJson(),
                     created_by = createdBy
                 },
                 transaction,

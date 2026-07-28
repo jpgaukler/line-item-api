@@ -21,7 +21,7 @@ internal record ProductData(
 /// </summary>
 internal static class ProductDataExtensions
 {
-    private static readonly JsonSerializerOptions _jsonOptions = new()
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         Converters = { new JsonStringEnumConverter() }
@@ -29,11 +29,11 @@ internal static class ProductDataExtensions
 
     internal static string ToJson(this ProductData productData)
     {
-        return JsonSerializer.Serialize(productData, _jsonOptions);
+        return JsonSerializer.Serialize(productData, JsonOptions);
     }
 
     internal static ProductData ToProductData(this string json)
     {
-        return JsonSerializer.Deserialize<ProductData>(json, _jsonOptions)!;
+        return JsonSerializer.Deserialize<ProductData>(json, JsonOptions)!;
     }
 }

@@ -5,7 +5,7 @@ SELECT p.id,
        p.description,
        p.active_version,
        pv.version,
-       pv.product_data,
+       pv.product_data_json,
        pv.created_at,
        pv.created_by
 FROM lineitem.product p

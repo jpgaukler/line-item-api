@@ -10,12 +10,12 @@ BEGIN
     INSERT INTO lineitem.product_draft (product_category_id,
                                         base_product_id,
                                         base_version,
-                                        product_data,
+                                        product_data_json,
                                         created_by)
       SELECT p.product_category_id,
              p.id,
              p.active_version,
-             pv.product_data,
+             pv.product_data_json,
              p_created_by
       FROM lineitem.product p
              INNER JOIN lineitem.product_version pv

@@ -4,7 +4,7 @@ CREATE TABLE lineitem.product_draft
   base_product_id     BIGINT      NULL,
   base_version        INT         NULL,
   product_category_id BIGINT      NOT NULL REFERENCES lineitem.product_category (id),
-  product_data        JSONB       NOT NULL,
+  product_data_json   JSONB       NOT NULL,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_by          BIGINT      NOT NULL REFERENCES lineitem.app_user (id),
   updated_at          TIMESTAMPTZ NULL,
