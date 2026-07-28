@@ -93,7 +93,7 @@ public class ProductDraftController : ControllerBase
         try
         {
             await _productDraftService.UpdateAsync(id, productDraft, HttpContext.GetUserId(), cancellationToken);
-            return Ok();
+            return NoContent();
         }
         catch (NotFoundException ex)
         {
@@ -113,7 +113,11 @@ public class ProductDraftController : ControllerBase
         try
         {
             var product = await _productDraftService.PublishAsync(id, HttpContext.GetUserId(), cancellationToken);
-            return Ok(product);
+            return CreatedAtAction(
+                nameof(ProductController.GetByIdAsync),
+                "Product",
+                new { version = "1", id = product.Id },
+                product);
         }
         catch (NotFoundException ex)
         {

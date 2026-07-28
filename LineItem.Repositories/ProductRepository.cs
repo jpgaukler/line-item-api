@@ -100,7 +100,7 @@ public class ProductRepository : RepositoryBase, IProductRepository
         await connection.ExecuteAsync(command);
     }
 
-    private static Product MapProductVersionDetailRow(ProductVersionDetailRow row)
+    internal static Product MapProductVersionDetailRow(ProductVersionDetailRow row)
     {
         var productData = row.ProductData.ToProductData();
 
@@ -123,7 +123,7 @@ public class ProductRepository : RepositoryBase, IProductRepository
     /// <summary>
     ///     Mapping shape for the product_version_detail view.
     /// </summary>
-    private record ProductVersionDetailRow(
+    internal record ProductVersionDetailRow(
         long Id,
         long ProductCategoryId,
         string Name,

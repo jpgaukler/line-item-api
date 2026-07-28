@@ -95,7 +95,6 @@ public class ProductDraftService : IProductDraftService
         return _productDraftRepository.DeleteAsync(draftId, cancellationToken);
     }
 
-
     private async Task ValidateProductDraftAsync(ProductDraft draft, CancellationToken cancellationToken)
     {
         var errors = new List<string>();

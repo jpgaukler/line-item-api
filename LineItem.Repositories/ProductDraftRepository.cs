@@ -99,7 +99,7 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
         return result is null ? null : MapProductDraftRow(result);
     }
 
-    public async Task PublishAsync(
+    public async Task<Product> PublishAsync(
         ProductDraft draft,
         long createdBy,
         CancellationToken cancellationToken
@@ -168,6 +168,16 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
 
             // commit transaction
             await transaction.CommitAsync(cancellationToken);
+
+            // return published product
+            var command = new CommandDefinition(
+                "SELECT * FROM lineitem.product_retrieve_active_version_by_id(@id);",
+                new { id = baseProductId },
+                cancellationToken: cancellationToken);
+
+            var result = await connection.QuerySingleOrDefaultAsync<ProductRepository.ProductVersionDetailRow>(command);
+
+            return ProductRepository.MapProductVersionDetailRow(result!);
         }
         catch
         {

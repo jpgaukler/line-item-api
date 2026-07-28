@@ -38,7 +38,7 @@ public class Program
             {
                 Log.Information("Starting database migration downgrade to version {Version}.", version);
                 runner.MigrateDown(version);
-                Log.Information("Database downgrade to completed successfully.");
+                Log.Information("Database downgrade completed successfully.");
             }
             else
             {
