@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,7 +8,6 @@ using LineItem.Models;
 using LineItem.Repositories.Helpers;
 using LineItem.Repositories.Interfaces;
 using LineItem.Repositories.Options;
-using LineItem.Repositories.Tables;
 using Microsoft.Extensions.Options;
 
 namespace LineItem.Repositories;
@@ -28,9 +28,9 @@ public class ProductRepository : RepositoryBase, IProductRepository
             new { id = productId },
             cancellationToken: cancellationToken);
 
-        var result = await connection.QuerySingleOrDefaultAsync<ProductActiveVersionRow>(command);
+        var result = await connection.QuerySingleOrDefaultAsync<ProductVersionDetailRow>(command);
 
-        return result is null ? null : MapActiveVersion(result);
+        return result is null ? null : MapProductVersionDetailRow(result);
     }
 
     public async Task<Product?> RetrieveVersionByIdAsync(
@@ -43,7 +43,7 @@ public class ProductRepository : RepositoryBase, IProductRepository
         await connection.OpenAsync(cancellationToken);
 
         var command = new CommandDefinition(
-            "SELECT * FROM lineitem.product_retrieve_specific_version_by_id(@product_id, @version);",
+            "SELECT * FROM lineitem.product_retrieve_version_by_id(@product_id, @version);",
             new
             {
                 product_id = productId,
@@ -51,9 +51,9 @@ public class ProductRepository : RepositoryBase, IProductRepository
             },
             cancellationToken: cancellationToken);
 
-        var result = await connection.QuerySingleOrDefaultAsync<ProductVersionRow>(command);
+        var result = await connection.QuerySingleOrDefaultAsync<ProductVersionDetailRow>(command);
 
-        return result is null ? null : MapActiveVersion(result);
+        return result is null ? null : MapProductVersionDetailRow(result);
     }
 
     public async Task<IEnumerable<Product>> RetrieveByCategoryIdAsync(
@@ -69,8 +69,8 @@ public class ProductRepository : RepositoryBase, IProductRepository
             new { category_id = categoryId },
             cancellationToken: cancellationToken);
 
-        var results = await connection.QueryAsync<ProductActiveVersionRow>(command);
-        return results.Select(MapActiveVersion);
+        var results = await connection.QueryAsync<ProductVersionDetailRow>(command);
+        return results.Select(MapProductVersionDetailRow);
     }
 
     public async Task<IEnumerable<Product>> SearchAsync(string searchTerm, CancellationToken cancellationToken)
@@ -83,8 +83,8 @@ public class ProductRepository : RepositoryBase, IProductRepository
             new { search_term = searchTerm },
             cancellationToken: cancellationToken);
 
-        var results = await connection.QueryAsync<ProductActiveVersionRow>(command);
-        return results.Select(MapActiveVersion);
+        var results = await connection.QueryAsync<ProductVersionDetailRow>(command);
+        return results.Select(MapProductVersionDetailRow);
     }
 
     public async Task DeleteAsync(long id, CancellationToken cancellationToken)
@@ -100,7 +100,7 @@ public class ProductRepository : RepositoryBase, IProductRepository
         await connection.ExecuteAsync(command);
     }
 
-    private static Product MapActiveVersion(ProductActiveVersionRow row)
+    private static Product MapProductVersionDetailRow(ProductVersionDetailRow row)
     {
         var productData = row.ProductData.ToProductData();
 
@@ -114,7 +114,23 @@ public class ProductRepository : RepositoryBase, IProductRepository
             ProductCodeFormula = productData.ProductCodeFormula,
             Inputs = productData.Inputs,
             Adders = productData.Adders,
-            PriceDictionary = productData.PriceDictionary
+            PriceDictionary = productData.PriceDictionary,
+            CreatedAt = row.CreatedAt,
+            CreatedBy = row.CreatedBy
         };
     }
+
+    /// <summary>
+    ///     Mapping shape for the product_version_detail view.
+    /// </summary>
+    private record ProductVersionDetailRow(
+        long Id,
+        long ProductCategoryId,
+        string Name,
+        string Description,
+        int ActiveVersion,
+        int Version,
+        string ProductData,
+        DateTime CreatedAt,
+        long CreatedBy);
 }

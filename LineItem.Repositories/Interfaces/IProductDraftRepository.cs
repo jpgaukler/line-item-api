@@ -47,8 +47,7 @@ public interface IProductDraftRepository
     ///     and product_version (v1), otherwise adds a new version, and bumps active_version.
     ///     Both paths execute in a single transaction.
     /// </summary>
-    /// <returns>The published product.</returns>
-    public Task<Product> PublishAsync(ProductDraft draft, long createdBy, CancellationToken cancellationToken);
+    public Task PublishAsync(ProductDraft draft, long createdBy, CancellationToken cancellationToken);
 
     /// <summary>
     ///     Deletes a product draft by id.

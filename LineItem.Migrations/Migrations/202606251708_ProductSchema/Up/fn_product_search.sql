@@ -1,18 +1,18 @@
 CREATE OR REPLACE FUNCTION lineitem.product_search(
   p_search_term VARCHAR
 )
-  RETURNS SETOF lineitem.product_active_version
+  RETURNS SETOF lineitem.product_version_detail
 AS
 $$
 BEGIN
   RETURN QUERY
     SELECT *
-    FROM lineitem.product_active_version pav
-    WHERE WORD_SIMILARITY(p_search_term, pav.name) > 0.3
-       OR WORD_SIMILARITY(p_search_term, pav.description) > 0.3
+    FROM lineitem.product_active_version_detail p
+    WHERE WORD_SIMILARITY(p_search_term, p.name) > 0.3
+       OR WORD_SIMILARITY(p_search_term, p.description) > 0.3
     ORDER BY GREATEST(
-                 WORD_SIMILARITY(p_search_term, pav.name),
-                 WORD_SIMILARITY(p_search_term, pav.description)
+                 WORD_SIMILARITY(p_search_term, p.name),
+                 WORD_SIMILARITY(p_search_term, p.description)
              ) DESC;
 END;
 $$ LANGUAGE plpgsql STABLE;

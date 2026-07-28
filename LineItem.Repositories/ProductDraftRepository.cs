@@ -1,11 +1,11 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
 using LineItem.Models;
 using LineItem.Repositories.Helpers;
 using LineItem.Repositories.Interfaces;
 using LineItem.Repositories.Options;
-using LineItem.Repositories.Tables;
 using Microsoft.Extensions.Options;
 
 namespace LineItem.Repositories;
@@ -30,13 +30,13 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
             new
             {
                 product_category_id = draft.ProductCategoryId,
-                product_data = draft.ToProductData().ToJson(),
+                product_data = MapProductData(draft).ToJson(),
                 created_by = createdBy
             },
             cancellationToken: cancellationToken);
 
         var result = await connection.QuerySingleAsync<ProductDraftRow>(command);
-        return MapDraft(result);
+        return MapProductDraftRow(result);
     }
 
     public async Task<ProductDraft> CreateFromProductAsync(
@@ -58,7 +58,7 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
             cancellationToken: cancellationToken);
 
         var result = await connection.QuerySingleAsync<ProductDraftRow>(command);
-        return MapDraft(result);
+        return MapProductDraftRow(result);
     }
 
     public async Task UpdateAsync(
@@ -77,7 +77,7 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
             {
                 id = draftId,
                 product_category_id = draft.ProductCategoryId,
-                product_data = draft.ToProductData().ToJson(),
+                product_data = MapProductData(draft).ToJson(),
                 updated_by = updatedBy
             },
             cancellationToken: cancellationToken);
@@ -96,10 +96,10 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
             cancellationToken: cancellationToken);
 
         var result = await connection.QuerySingleOrDefaultAsync<ProductDraftRow>(command);
-        return result is null ? null : MapDraft(result);
+        return result is null ? null : MapProductDraftRow(result);
     }
 
-    public async Task<Product> PublishAsync(
+    public async Task PublishAsync(
         ProductDraft draft,
         long createdBy,
         CancellationToken cancellationToken
@@ -138,7 +138,7 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
                 new
                 {
                     product_id = baseProductId,
-                    product_data = draft.ToProductData().ToJson(),
+                    product_data = MapProductData(draft).ToJson(),
                     created_by = createdBy
                 },
                 transaction,
@@ -166,20 +166,8 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
                 cancellationToken: cancellationToken);
             await connection.ExecuteAsync(deleteDraftCommand);
 
+            // commit transaction
             await transaction.CommitAsync(cancellationToken);
-
-            return new Product
-            {
-                Id = baseProductId.Value,
-                Version = productVersionRow.Version,
-                ProductCategoryId = draft.ProductCategoryId,
-                Name = draft.Name,
-                Description = draft.Description,
-                ProductCodeFormula = draft.ProductCodeFormula,
-                Inputs = draft.Inputs,
-                Adders = draft.Adders,
-                PriceDictionary = draft.PriceDictionary
-            };
         }
         catch
         {
@@ -201,7 +189,7 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
         await connection.ExecuteAsync(command);
     }
 
-    private static ProductDraft MapDraft(ProductDraftRow row)
+    private static ProductDraft MapProductDraftRow(ProductDraftRow row)
     {
         var productData = row.ProductData.ToProductData();
 
@@ -223,4 +211,55 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
             PriceDictionary = productData.PriceDictionary
         };
     }
+
+    private static ProductData MapProductData(ProductDraft productDraft)
+    {
+        return new ProductData
+        (
+            productDraft.Name,
+            productDraft.Description,
+            productDraft.ProductCodeFormula,
+            productDraft.Inputs,
+            productDraft.Adders,
+            productDraft.PriceDictionary
+        );
+    }
+
+    /// <summary>
+    ///     Mapping shape for the product_draft table.
+    /// </summary>
+    private record ProductDraftRow(
+        long Id,
+        long? BaseProductId,
+        int? BaseVersion,
+        long ProductCategoryId,
+        string ProductData,
+        DateTime CreatedAt,
+        long CreatedBy,
+        DateTime? UpdatedAt,
+        long? UpdatedBy);
+
+    /// <summary>
+    ///     Mapping shape for the product table.
+    /// </summary>
+    private record ProductRow(
+        long Id,
+        long ProductCategoryId,
+        string Name,
+        string Description,
+        int? ActiveVersion,
+        DateTime CreatedAt,
+        long CreatedBy,
+        DateTime? UpdatedAt,
+        long? UpdatedBy);
+
+    /// <summary>
+    ///     Mapping class for the product_version table.
+    /// </summary>
+    private record ProductVersionRow(
+        long ProductId,
+        int Version,
+        string ProductData,
+        DateTime CreatedAt,
+        long CreatedBy);
 }

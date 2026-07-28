@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace LineItem.Models;
@@ -59,18 +60,15 @@ public class Product : IProductData
     /// </summary>
     public long ProductCategoryId { get; set; }
 
-    // UNSURE HOW I WANT TO HANDLE THIS
+    /// <summary>
+    ///     When this version of the product was created.
+    /// </summary>
+    public DateTime CreatedAt { get; set; }
 
-    // /// <summary>
-    // ///     When the product was created.
-    // /// </summary>
-    // public DateTime CreatedAt { get; set; }
-    //
-    //
-    // /// <summary>
-    // ///     Id of the user who created the product.
-    // /// </summary>
-    // public long CreatedBy { get; set; }
+    /// <summary>
+    ///     Id of the user who created this version of the product.
+    /// </summary>
+    public long CreatedBy { get; set; }
 
     /// <inheritdoc />
     public string Name { get; set; } = string.Empty;
