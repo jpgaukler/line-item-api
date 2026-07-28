@@ -100,9 +100,17 @@ public class ProductDraftService : IProductDraftService
         var errors = new List<string>();
 
         // Category
-        var category = await _productCategoryRepository.RetrieveByIdAsync(draft.ProductCategoryId, cancellationToken);
-        if (category is null)
-            errors.Add($"Product category with id {draft.ProductCategoryId} does not exist.");
+        if (draft.ProductCategoryId is null)
+        {
+            errors.Add("Product category id is required.");
+        }
+        else
+        {
+            var category =
+                await _productCategoryRepository.RetrieveByIdAsync(draft.ProductCategoryId.Value, cancellationToken);
+            if (category is null)
+                errors.Add($"Product category with id {draft.ProductCategoryId} does not exist.");
+        }
 
         // Name
         if (string.IsNullOrWhiteSpace(draft.Name))

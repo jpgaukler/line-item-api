@@ -242,7 +242,7 @@ public class ProductDraftRepository : RepositoryBase, IProductDraftRepository
         long Id,
         long? BaseProductId,
         int? BaseVersion,
-        long ProductCategoryId,
+        long? ProductCategoryId,
         string ProductDataJson,
         DateTime CreatedAt,
         long CreatedBy,

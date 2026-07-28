@@ -14,7 +14,7 @@ public class ProductDraftBuilder
     private readonly List<ProductInput> _inputs = [];
     private string _description = "A test product description.";
     private string _name = "Test Product";
-    private long _productCategoryId;
+    private long? _productCategoryId;
     private string _productCodeFormula = "=W{Width}-H{Height}";
 
     public static ProductDraftBuilder Default()

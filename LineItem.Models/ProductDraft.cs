@@ -27,7 +27,7 @@ public class ProductDraft : IProductData
     /// <summary>
     ///     Id of the product category that the product belongs to.
     /// </summary>
-    public long ProductCategoryId { get; set; }
+    public long? ProductCategoryId { get; set; }
 
     /// <summary>
     ///     Timestamp of when the database record was created.
@@ -72,7 +72,7 @@ public class ProductDraft : IProductData
 ///     Represents a request to create a ProductDraft for a new product (not a new version of an existing product).
 /// </summary>
 public record CreateProductDraftRequest(
-    long ProductCategoryId,
+    long? ProductCategoryId,
     string Name,
     string Description,
     string ProductCodeFormula,
@@ -85,7 +85,7 @@ public record CreateProductDraftRequest(
 ///     Represents a request to update a ProductDraft.
 /// </summary>
 public record UpdateProductDraftRequest(
-    long ProductCategoryId,
+    long? ProductCategoryId,
     string Name,
     string Description,
     string ProductCodeFormula,
