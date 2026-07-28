@@ -151,6 +151,8 @@ public class ProductDraftControllerTests : IntegrationTestBase
             product.Description.Should().Be(draft.Description);
             product.Inputs.Should().BeEquivalentTo(draft.Inputs);
             product.Adders.Should().BeEquivalentTo(draft.Adders);
+            product.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+            product.CreatedBy.Should().Be(TestUserId);
 
             // RETRIEVE (verify product exists)
             response = await Client.GetAsync(response.Headers.Location);
@@ -164,6 +166,8 @@ public class ProductDraftControllerTests : IntegrationTestBase
             retrievedProduct.Description.Should().Be(draft.Description);
             retrievedProduct.Inputs.Should().BeEquivalentTo(draft.Inputs);
             retrievedProduct.Adders.Should().BeEquivalentTo(draft.Adders);
+            retrievedProduct.CreatedAt.Should().Be(product.CreatedAt);
+            retrievedProduct.CreatedBy.Should().Be(TestUserId);
 
             // VERIFY DRAFT DELETED
             response = await Client.GetAsync($"v1/product-drafts/{draft.Id}");
@@ -215,6 +219,10 @@ public class ProductDraftControllerTests : IntegrationTestBase
             productDraft2.Description.Should().Be(product.Description);
             productDraft2.Inputs.Should().BeEquivalentTo(product.Inputs);
             productDraft2.Adders.Should().BeEquivalentTo(product.Adders);
+            productDraft2.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+            productDraft2.CreatedBy.Should().Be(TestUserId);
+            productDraft2.UpdatedAt.Should().BeNull();
+            productDraft2.UpdatedBy.Should().BeNull();
 
             // UPDATE DRAFT
             var updateRequest = ProductDraftBuilder.Default()
@@ -236,6 +244,7 @@ public class ProductDraftControllerTests : IntegrationTestBase
             updatedProduct.Should().NotBeNull();
             updatedProduct.Name.Should().Be("Updated Product Name");
             updatedProduct.Version.Should().Be(2);
+            updatedProduct.CreatedAt.Should().BeAfter(product.CreatedAt);
 
             // VERIFY VERSION HISTORY
             response = await Client.GetAsync($"v1/products/{product.Id}");
@@ -245,6 +254,7 @@ public class ProductDraftControllerTests : IntegrationTestBase
             activeVersion.Should().NotBeNull();
             activeVersion.Name.Should().Be(updatedProduct.Name);
             activeVersion.Version.Should().Be(2);
+            activeVersion.CreatedAt.Should().Be(updatedProduct.CreatedAt);
 
             response = await Client.GetAsync($"v1/products/{product.Id}/versions/1");
             LogResponse(response);
@@ -253,6 +263,7 @@ public class ProductDraftControllerTests : IntegrationTestBase
             version1.Should().NotBeNull();
             version1.Name.Should().Be(product.Name);
             version1.Version.Should().Be(1);
+            version1.CreatedAt.Should().BeBefore(updatedProduct.CreatedAt);
 
             response = await Client.GetAsync($"v1/products/{product.Id}/versions/2");
             LogResponse(response);
@@ -261,6 +272,7 @@ public class ProductDraftControllerTests : IntegrationTestBase
             version2.Should().NotBeNull();
             version2.Name.Should().Be(updatedProduct.Name);
             version2.Version.Should().Be(2);
+            version2.CreatedAt.Should().BeAfter(version1.CreatedAt);
         }
         finally
         {
